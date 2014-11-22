@@ -4,6 +4,8 @@
 #include <time.h>
 #include <string.h>
 
+#define START_OF_FAT 50
+
 
 struct  __attribute__ ((__packed__)) {
  	__int16_t a;
@@ -43,34 +45,53 @@ int formatDisk(FILE *fileToFormat, char *diskName, __int16_t sectorSize, __int16
 
 	    if(fp != NULL)
 	    	{
-			fwrite(sector, sizeof(__int16_t), 1 /*20/2*/, fp);   //0
-			fwrite(cluster, sizeof(__int16_t), 1 /*20/2*/, fp);  //1
-			fwrite(disk, sizeof(__int16_t), 1 /*20/2*/, fp);     //2
-			fwrite(fatS, sizeof(__int16_t), 1 /*20/2*/, fp);     //3
-			fwrite(fatL, sizeof(__int16_t), 1 /*20/2*/, fp);     //4
-			fwrite(dataS, sizeof(__int16_t), 1 /*20/2*/, fp);    //5
-			fwrite(dataL, sizeof(__int16_t), 1 /*20/2*/, fp);    //6
-			fwrite(diskName, sizeof(char[32]), 1 /*20/2*/, fp);  //7 - Disk Name
+			fwrite(sector, sizeof(__int16_t), 1, fp);   //0
+			fwrite(cluster, sizeof(__int16_t), 1, fp);  //1
+			fwrite(disk, sizeof(__int16_t), 1, fp);     //2
+			fwrite(fatS, sizeof(__int16_t), 1, fp);     //3
+			fwrite(fatL, sizeof(__int16_t), 1, fp);     //4
+			fwrite(dataS, sizeof(__int16_t), 1, fp);    //5
+			fwrite(dataL, sizeof(__int16_t), 1, fp);    //6
+			fwrite(diskName, sizeof(char[32]), 1, fp);  //7 - Disk Name
 	    	// total MBR size = 46 bytes
 			
 			__int8_t buffer[1] = {0};
 			
-			fwrite(buffer, sizeof(__int8_t), 3 /*20/2*/, fp); // write in 3 buffer bytes to set MBR at 49 bytes
+			fwrite(buffer, sizeof(__int8_t), 3, fp); // write in 3 buffer bytes to set MBR at 49 bytes
 		
 			__int16_t unallocatedCluster[1] = {0xFFFF};
-			__int128_t unusedSector[1] = {0};
+			__int128_t unusedSector[1] = {0xFFFF};
 			
 			for(int i = 0;i<diskSize;i++) // write FAT entry for each cluster
 			{
-				fwrite(unallocatedCluster, sizeof(__int16_t), 1 /*20/2*/, fp);
+				fwrite(unallocatedCluster, sizeof(__int16_t), 1, fp);
 			}
 			
 			for(int i = 0;i<diskSize;i++) // write empty clusters to disk
 			{
-			fwrite(unusedSector, sizeof(__int128_t), clusterSize /*20/2*/, fp); // write (clusterSize) unused sectors per cluster
+			fwrite(unusedSector, sizeof(__int128_t), clusterSize, fp); // write (clusterSize) unused sectors per cluster
 			}
 			
+			fseek(fp, 20051, SEEK_SET); // seek to the 20051 byte of the file - return to beginning of data
+			
+			// initialize root directory
+			__int8_t entry_type[1]     = {0};  // indicates if file or directory - 0 - directory 1 - file  - 1 byte
+			fwrite(entry_type, sizeof(__int8_t), 1, fp);
+			
+			__int16_t creation_time[1] = {7}; // creation time - 2 bytes
+			fwrite(creation_time, sizeof(__int16_t), 1, fp);
+			
+			__int16_t creation_date[1] = {8}; // creation date - 2 bytes
+			fwrite(creation_date, sizeof(__int16_t), 1, fp);
+			
+			__int8_t length_of_entry_name[1]  = {4}; // length of entry name 2 bytes
+			fwrite(length_of_entry_name, sizeof(__int8_t), 1, fp);
+			
+			char entryName[16] = {"root"}; // directory name - 16 bytes
+			fwrite(entryName, sizeof(char[16]), 1, fp);
 			}
+			
+			
 	   else
 		{
 	       	return 1;
@@ -92,8 +113,8 @@ void readDisk(FILE *fileToRead, char *diskArea, char *diskName)
 			    if(fp != NULL)
 				{
 				rewind(fp);
-				fread(result, sizeof(__int16_t), 7 /*20/2*/, fp); // read the first 6 slots - 12 bytes
-				fread(result2, sizeof(char), 32 /*20/2*/, fp); // read file name - the next 32 bytes
+				fread(result, sizeof(__int16_t), 7, fp); // read the first 6 slots - 12 bytes
+				fread(result2, sizeof(char), 32, fp); // read file name - the next 32 bytes
 				printf("\n");
 				for (i = 0; i < 7; i++)
 					{
@@ -134,7 +155,7 @@ int main(int argc, char *argv[]) {
 	time_t t = time(NULL);
 	  struct tm *tptr = localtime(&t);
 	//printf("%d",test<<5);
-	formatDisk(fileToInit,"/Volumes/USB20FD/OSHW4/test.bin",128,8,10000,50,20000,20051,20);
+	formatDisk(fileToInit,"/Volumes/USB20FD/OSHW4/test.bin",128,8,10000,START_OF_FAT,20000,20051,20);
 	readDisk(fileToInit,"MBR","/Volumes/USB20FD/OSHW4/test.bin");
 
 	
