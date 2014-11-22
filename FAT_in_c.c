@@ -1,4 +1,4 @@
-// John Solsma 2014
+// John Solsma 201415
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
@@ -44,7 +44,8 @@ int formatDisk(FILE *fileToFormat, char *diskName, __int16_t sectorSize, __int16
 			fwrite(dataS, sizeof(__int16_t), 1 /*20/2*/, fp);    //5
 			fwrite(dataL, sizeof(__int16_t), 1 /*20/2*/, fp);    //6
 			fwrite(diskName, sizeof(char[32]), 1 /*20/2*/, fp);  //7 - Disk Name
-	    	}
+	    	// total MBR size = 46 bytes
+			}
 	   else
 		{
 	       	return 1;
@@ -64,7 +65,7 @@ void readDisk(FILE *fileToRead, char *diskArea, char *diskName)
 	{
 		fp=fopen(diskName, "rb+");
 			    if(fp != NULL)
-			{
+				{
 				rewind(fp);
 				fread(result, sizeof(__int16_t), 7 /*20/2*/, fp); // read the first 6 slots - 12 bytes
 				fread(result2, sizeof(char), 32 /*20/2*/, fp); // read file name - the next 32 bytes
@@ -82,7 +83,7 @@ void readDisk(FILE *fileToRead, char *diskArea, char *diskName)
 						printf("Size of disk in clusters      = %d\n", (int)result[i]);
 						break;
 						case 3:
-						printf("Start of FAT                  = %d\n", (int)result[i]);
+						printf("Start of FAT                  = %d - (MBR populates first 46 bytes of disk) \n", (int)result[i]);
 						break;
 						case 4:
 						printf("Length of FAT                 = %d\n", (int)result[i]);
@@ -108,7 +109,7 @@ int main(int argc, char *argv[]) {
 	time_t t = time(NULL);
 	  struct tm *tptr = localtime(&t);
 	//printf("%d",test<<5);
-	formatDisk(fileToInit,"/Volumes/USB20FD/OSHW4/test.bin",3000,7,10000,10,10,20,20);
+	formatDisk(fileToInit,"/Volumes/USB20FD/OSHW4/test.bin",128,8,10000,50,10,20,20);
 	readDisk(fileToInit,"MBR","/Volumes/USB20FD/OSHW4/test.bin");
 
 	
