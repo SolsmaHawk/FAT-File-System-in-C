@@ -1,4 +1,4 @@
-// John Solsma 201415
+// John Solsma 2014
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
@@ -45,6 +45,18 @@ int formatDisk(FILE *fileToFormat, char *diskName, __int16_t sectorSize, __int16
 			fwrite(dataL, sizeof(__int16_t), 1 /*20/2*/, fp);    //6
 			fwrite(diskName, sizeof(char[32]), 1 /*20/2*/, fp);  //7 - Disk Name
 	    	// total MBR size = 46 bytes
+			
+			__int8_t buffer[1] = {0};
+			
+			fwrite(buffer, sizeof(__int8_t), 3 /*20/2*/, fp); // write in 3 buffer bytes to set MBR at 49 bytes
+		
+			__int16_t unallocatedCluster[1] = {0xFFFF};
+			
+			for(int i = 0;i<diskSize;i++) // write FAT entry for each cluster
+			{
+				fwrite(unallocatedCluster, sizeof(__int16_t), 1 /*20/2*/, fp);
+			}
+			
 			}
 	   else
 		{
@@ -83,13 +95,13 @@ void readDisk(FILE *fileToRead, char *diskArea, char *diskName)
 						printf("Size of disk in clusters      = %d\n", (int)result[i]);
 						break;
 						case 3:
-						printf("Start of FAT                  = %d - (MBR populates first 46 bytes of disk) \n", (int)result[i]);
+						printf("Start of FAT                  = byte %d - (MBR populates first 46 bytes of disk) \n", (int)result[i]);
 						break;
 						case 4:
-						printf("Length of FAT                 = %d\n", (int)result[i]);
+						printf("Length of FAT                 = %d bytes \n", (int)result[i]);
 						break;
 						case 5:
-						printf("Start of data                 = %d\n", (int)result[i]);
+						printf("Start of data                 = byte %d - (byte after FAT) \n", (int)result[i]); 
 						break;
 						case 6:
 						printf("Length of data                = %d\n", (int)result[i]);
@@ -109,7 +121,7 @@ int main(int argc, char *argv[]) {
 	time_t t = time(NULL);
 	  struct tm *tptr = localtime(&t);
 	//printf("%d",test<<5);
-	formatDisk(fileToInit,"/Volumes/USB20FD/OSHW4/test.bin",128,8,10000,50,10,20,20);
+	formatDisk(fileToInit,"/Volumes/USB20FD/OSHW4/test.bin",128,8,10000,50,20000,20051,20);
 	readDisk(fileToInit,"MBR","/Volumes/USB20FD/OSHW4/test.bin");
 
 	
