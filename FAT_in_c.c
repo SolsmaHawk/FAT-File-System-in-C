@@ -1,9 +1,16 @@
 #include <stdio.h>
 #include <time.h>
 
-int initDisk(char *diskName)
+int initDisk(FILE *fileToInit, char *diskName)
 {
-	return 0;
+	fileToInit=fopen(diskName, "wb+");
+	if(fileToInit != NULL)
+	{
+	printf("Disk successfully initialized at: %s",diskName);
+	return 1;
+	}
+	else
+		return 0;
 }
 
 int formatDisk(char *diskName, __int16_t sectorSize, __int16_t clusterSize, __int16_t diskSize, __int16_t fatStart, __int16_t fatLength, __int16_t dataStart, __int16_t dataLength)
@@ -14,16 +21,14 @@ int formatDisk(char *diskName, __int16_t sectorSize, __int16_t clusterSize, __in
 	    __int16_t result[10];
 	  char result2[32];
 	    int i;
-	__int16_t sector[1]   = {sectorSize};      // size of a sector in bytes
-	__int16_t cluster[1]   = {clusterSize};     // size of a cluster in sectors
-	__int16_t disk[1]       = {diskSize};     // size of disk in clusters
-	__int16_t fatS[1]       = {fatStart};
-	__int16_t fatL[1]       = {fatLength};
-	__int16_t dataS[1]    = {dataStart};
-	__int16_t dataL[1]    = {dataLength};
-	char diskN[32];
-	diskN[31]='\0';
-	diskN[0]=*diskName;
+	__int16_t sector[1]   = {sectorSize};         // size of a sector in bytes
+	__int16_t cluster[1]   = {clusterSize};        // size of a cluster in sectors
+	__int16_t disk[1]       = {diskSize};            // size of disk in clusters
+	__int16_t fatS[1]       = {fatStart};            // start of the FAT
+	__int16_t fatL[1]       = {fatLength};         // length of the FAT
+	__int16_t dataS[1]    = {dataStart};         // start of the data
+	__int16_t dataL[1]    = {dataLength};       // length of the data
+
 	//char binary_string[ sizeof(__int16_t) ];
 
 	
@@ -55,18 +60,14 @@ int formatDisk(char *diskName, __int16_t sectorSize, __int16_t clusterSize, __in
 		fwrite(dataL, sizeof(__int16_t), 1 /*20/2*/, fp); //6
 		fwrite(diskName, sizeof(char[32]), 1 /*20/2*/, fp); //7 - Disk Name
 		
-	     // fwrite(x, sizeof(__int16_t), 10 /*20/2*/, fp); // write array to file in chunks the size of short (int16)
-		
-		 // fwrite(z, sizeof(__int16_t), 1000000 /*20/2*/, fp); // write array to file in chunks the size of short (int16)
-
-		
 	        rewind(fp);
 	        fread(result, sizeof(__int16_t), 7 /*20/2*/, fp); // read the first 6 slots - 12 bytes
 		  fread(result2, sizeof(char), 32 /*20/2*/, fp); // read file name - the next 32 bytes
 	    }
 	    else
+		{
 	        return 1;
-
+		}
 	    printf("Result\n");
 	    for (i = 0; i < 7; i++)
 	        printf("%d = %d\n", i, (int)result[i]);
@@ -76,10 +77,12 @@ int formatDisk(char *diskName, __int16_t sectorSize, __int16_t clusterSize, __in
 }
 
 int main(int argc, char *argv[]) {
-	__int16_t test = 3;
+	FILE *fileToInit;
+	initDisk(fileToInit,"/Volumes/USB20FD/OSHW4/test.bin");
+	//__int16_t test = 3;
 	time_t t = time(NULL);
 	  struct tm *tptr = localtime(&t);
-	printf("%d",test<<5);
+	//printf("%d",test<<5);
 	formatDisk("/Volumes/USB20FD/OSHW4/test.bin",3000,7,10000,10,10,20,20);
 	
 
