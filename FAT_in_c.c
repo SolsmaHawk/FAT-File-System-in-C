@@ -1,7 +1,14 @@
 // John Solsma 2014
+
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
+
+
+struct  __attribute__ ((__packed__)) {
+ 	__int16_t a;
+ 	char b;
+} packet_t;
 
 
 int initDisk(FILE *fileToInit, char *diskName)
@@ -51,10 +58,16 @@ int formatDisk(FILE *fileToFormat, char *diskName, __int16_t sectorSize, __int16
 			fwrite(buffer, sizeof(__int8_t), 3 /*20/2*/, fp); // write in 3 buffer bytes to set MBR at 49 bytes
 		
 			__int16_t unallocatedCluster[1] = {0xFFFF};
+			__int128_t unusedSector[1] = {0};
 			
 			for(int i = 0;i<diskSize;i++) // write FAT entry for each cluster
 			{
 				fwrite(unallocatedCluster, sizeof(__int16_t), 1 /*20/2*/, fp);
+			}
+			
+			for(int i = 0;i<diskSize;i++) // write empty clusters to disk
+			{
+			fwrite(unusedSector, sizeof(__int128_t), clusterSize /*20/2*/, fp); // write (clusterSize) unused sectors per cluster
 			}
 			
 			}
@@ -95,7 +108,7 @@ void readDisk(FILE *fileToRead, char *diskArea, char *diskName)
 						printf("Size of disk in clusters      = %d\n", (int)result[i]);
 						break;
 						case 3:
-						printf("Start of FAT                  = byte %d - (MBR populates first 46 bytes of disk) \n", (int)result[i]);
+						printf("Start of FAT                  = byte %d - (MBR populates first 46 bytes (+3 buffer bytes) of disk) \n", (int)result[i]);
 						break;
 						case 4:
 						printf("Length of FAT                 = %d bytes \n", (int)result[i]);
