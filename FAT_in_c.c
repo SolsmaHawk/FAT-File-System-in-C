@@ -75,21 +75,35 @@ int formatDisk(FILE *fileToFormat, char *diskName, __int16_t sectorSize, __int16
 			fseek(fp, 20051, SEEK_SET); // seek to the 20051 byte of the file - return to beginning of data
 			
 			// initialize root directory
-			__int8_t entry_type[1]     = {0};  // indicates if file or directory - 0 - directory 1 - file  - 1 byte
+			__int8_t entry_type[1]     = {0};              // indicates if file or directory - 0 - directory 1 - file  - 1 byte
 			fwrite(entry_type, sizeof(__int8_t), 1, fp);
 			
-			__int16_t creation_time[1] = {7}; // creation time - 2 bytes
+			__int16_t creation_time[1] = {7};              // creation time - 2 bytes
 			fwrite(creation_time, sizeof(__int16_t), 1, fp);
 			
-			__int16_t creation_date[1] = {8}; // creation date - 2 bytes
+			__int16_t creation_date[1] = {8};              // creation date - 2 bytes
 			fwrite(creation_date, sizeof(__int16_t), 1, fp);
 			
-			__int8_t length_of_entry_name[1]  = {4}; // length of entry name 2 bytes
+			__int8_t length_of_entry_name[1]  = {4};       // length of entry name 2 bytes
 			fwrite(length_of_entry_name, sizeof(__int8_t), 1, fp);
 			
-			char entryName[16] = {"root"}; // directory name - 16 bytes
+			char entryName[16] = {"root"};                 // file-directory name - 16 bytes
 			fwrite(entryName, sizeof(char[16]), 1, fp);
+			
+			__int32_t file_size[1] = {0}; 	                // file size - 2 bytes - should be zero for directories
+			fwrite(file_size, sizeof(__int32_t), 1, fp);
+			
+			__int8_t pointer_type[1]  = {1};              // pointer type - 0 = pointer to a file, 1 = pointer to a directory, 2 = pointer to another entry describing more children for this directory)
+			fwrite(pointer_type, sizeof(__int8_t), 1, fp);
+			
+			__int8_t reserved[1]  = {0};                  // reserved - 1 byte
+			fwrite(reserved, sizeof(__int8_t), 1, fp);
+			
+			__int16_t start_pointer[1] = {0};             // - points to the start of the entry describing the child - 2 bytes
+			fwrite(start_pointer, sizeof(__int16_t), 1, fp);
 			}
+			
+			
 			
 			
 	   else
@@ -158,5 +172,16 @@ int main(int argc, char *argv[]) {
 	formatDisk(fileToInit,"/Volumes/USB20FD/OSHW4/test.bin",128,8,10000,START_OF_FAT,20000,20051,20);
 	readDisk(fileToInit,"MBR","/Volumes/USB20FD/OSHW4/test.bin");
 
+
+	time_t rawtime;
+	struct tm * timeinfo;
+
+	time ( &rawtime );
+	timeinfo = localtime ( &rawtime );
+	printf ( "\n Current local time and date: %s", asctime (timeinfo) );
+	
+	time_t currentTime;
+			currentTime = time(NULL);
+			printf(ctime(&currentTime));
 	
 }
