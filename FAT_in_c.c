@@ -130,16 +130,21 @@ int fs_opendir(char *diskname, char *absolute_path) // returns an integer that r
 	FILE *fp;
 	fp=fopen(diskname, "wb+");
 	char* s;
+	if(strncmp("/",absolute_path, 1)==0) // root directory
+	{
+		
+	}
+	else
+	{
 	s = strtok(absolute_path, "/");
-	//printf("%s", s);
 	
 	/* walk through other tokens */
 	   while( s != NULL ) 
 	   {
 	      printf( "%s\n", s );
-	    
 	      s = strtok(NULL, "/");
 	   }
+	}
 	fclose(fp);
 	return 0;
 }
@@ -218,7 +223,7 @@ int main(int argc, char *argv[]) {
 	time_t currentTime;
 			currentTime = time(NULL);
 			printf("%s",ctime(&currentTime));
-			char directory[12] = {"/root/hello"};
+			char directory[12] = {"/hello"};
 			fs_opendir("/Volumes/USB20FD/OSHW4/test.bin",directory);
 	
 }
