@@ -15,24 +15,6 @@ struct  __attribute__ ((__packed__)) {
 
 
 
-/**
-entry_type (1 byte) - indicates if this is a file/directory (0 - file, 1 - directory)
-creation_time (2 bytes) - format described below
-creation_date (2 bytes) - format described below
-length of entry name (1 byte)  
-entry name (16 bytes) - the file/directory name
-size (4 bytes) - the size of the file in bytes. Should be zero for directories:
-**/
-typedef struct __attribute__ ((__packed__)) {
-	__uint8_t		entry_type;
-	__uint16_t	creation_time, creation_data;
-	__uint8_t		name_len;
-	char		name[16];
-	__uint32_t	size;
-} entry_t;
-
-
-
 int initDisk(FILE *fileToInit, char *diskName)
 {
 	fileToInit=fopen(diskName, "wb+");
@@ -136,6 +118,33 @@ int formatDisk(FILE *fileToFormat, char *diskName, __int16_t sectorSize, __int16
 }
 
 
+
+
+int fs_opendir(char *diskname, char *absolute_path) // returns an integer that returns a handler to the directory pointed by absolute path ex: /root/new/
+{
+	
+	char* s;
+	s = strtok(absolute_path, "/");
+	//printf("%s", s);
+	
+	/* walk through other tokens */
+	   while( s != NULL ) 
+	   {
+	      printf( "%s\n", s );
+	    
+	      s = strtok(NULL, "/");
+	   }
+	
+	return 0;
+}
+
+
+void fs_mkdir(int dh, char *child_name)
+{
+	
+}
+
+
 void readDisk(FILE *fileToRead, char *diskArea, char *diskName)
 {	int i;
     __int16_t result[10];
@@ -203,5 +212,7 @@ int main(int argc, char *argv[]) {
 	time_t currentTime;
 			currentTime = time(NULL);
 			printf("%s",ctime(&currentTime));
+			char directory[12] = {"/root/hello"};
+			fs_opendir("/Volumes/USB20FD/OSHW4/test.bin",directory);
 	
 }
