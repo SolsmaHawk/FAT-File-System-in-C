@@ -74,9 +74,14 @@ int formatDisk(FILE *fileToFormat, char *diskName, __int16_t sectorSize, __int16
 			fwrite(unusedSector, sizeof(__int128_t), clusterSize, fp); // write (clusterSize) unused sectors per cluster
 			}
 			
-			fseek(fp, 20051, SEEK_SET); // seek to the 20051 byte of the file - return to beginning of data
-			
 			// initialize root directory
+			
+			fseek(fp, START_OF_FAT, SEEK_SET);                    // seek to first FAT entry
+			__int16_t allocatedCluster[1] = {0};            
+			fwrite(allocatedCluster, sizeof(__int16_t), 1, fp);   // write entry for root directory
+						
+			fseek(fp, 20051, SEEK_SET);                    // seek to the 20051 byte of the file - return to beginning of data
+			
 			__int8_t entry_type[1]     = {0};              // indicates if file or directory - 0 - directory 1 - file  - 1 byte
 			fwrite(entry_type, sizeof(__int8_t), 1, fp);
 			
@@ -122,7 +127,8 @@ int formatDisk(FILE *fileToFormat, char *diskName, __int16_t sectorSize, __int16
 
 int fs_opendir(char *diskname, char *absolute_path) // returns an integer that returns a handler to the directory pointed by absolute path ex: /root/new/
 {
-	
+	FILE *fp;
+	fp=fopen(diskname, "wb+");
 	char* s;
 	s = strtok(absolute_path, "/");
 	//printf("%s", s);
@@ -134,7 +140,7 @@ int fs_opendir(char *diskname, char *absolute_path) // returns an integer that r
 	    
 	      s = strtok(NULL, "/");
 	   }
-	
+	fclose(fp);
 	return 0;
 }
 
