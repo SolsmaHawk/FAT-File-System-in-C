@@ -13,6 +13,26 @@ struct  __attribute__ ((__packed__)) {
 } packet_t;
 
 
+
+
+/**
+entry_type (1 byte) - indicates if this is a file/directory (0 - file, 1 - directory)
+creation_time (2 bytes) - format described below
+creation_date (2 bytes) - format described below
+length of entry name (1 byte)  
+entry name (16 bytes) - the file/directory name
+size (4 bytes) - the size of the file in bytes. Should be zero for directories:
+**/
+typedef struct __attribute__ ((__packed__)) {
+	__uint8_t		entry_type;
+	__uint16_t	creation_time, creation_data;
+	__uint8_t		name_len;
+	char		name[16];
+	__uint32_t	size;
+} entry_t;
+
+
+
 int initDisk(FILE *fileToInit, char *diskName)
 {
 	fileToInit=fopen(diskName, "wb+");
@@ -99,8 +119,8 @@ int formatDisk(FILE *fileToFormat, char *diskName, __int16_t sectorSize, __int16
 			__int8_t reserved[1]  = {0};                  // reserved - 1 byte
 			fwrite(reserved, sizeof(__int8_t), 1, fp);
 			
-			__int16_t start_pointer[1] = {0};             // - points to the start of the entry describing the child - 2 bytes
-			fwrite(start_pointer, sizeof(__int16_t), 1, fp);
+			__int32_t start_pointer[1] = {0};             // - points to the start of the entry describing the child - 2 bytes
+			fwrite(start_pointer, sizeof(__int32_t), 1, fp);
 			}
 			
 			
@@ -182,6 +202,6 @@ int main(int argc, char *argv[]) {
 	
 	time_t currentTime;
 			currentTime = time(NULL);
-			printf(ctime(&currentTime));
+			printf("%s",ctime(&currentTime));
 	
 }
