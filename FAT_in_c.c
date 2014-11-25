@@ -27,12 +27,13 @@ int initDisk(FILE *fileToInit, char *diskName)
 		return 0;
 }
 
+static __int16_t clusters;
 
 int formatDisk(FILE *fileToFormat, char *diskName, __int16_t sectorSize, __int16_t clusterSize, __int16_t diskSize, __int16_t fatStart, __int16_t fatLength, __int16_t dataStart, __int16_t dataLength)
 {
 	FILE *fp = fileToFormat;
 
-
+	clusters = diskSize;                      // set global # of clusters to calculate data start
 	__int16_t sector[1]    = {sectorSize};       // size of a sector in bytes
 	__int16_t cluster[1]   = {clusterSize};      // size of a cluster in sectors
 	__int16_t disk[1]      = {diskSize};         // size of disk in clusters
@@ -47,66 +48,66 @@ int formatDisk(FILE *fileToFormat, char *diskName, __int16_t sectorSize, __int16
 
 	    if(fp != NULL)
 	    	{
-			fwrite(sector, sizeof(__int16_t), 1, fp);   //0
-			fwrite(cluster, sizeof(__int16_t), 1, fp);  //1
-			fwrite(disk, sizeof(__int16_t), 1, fp);     //2
-			fwrite(fatS, sizeof(__int16_t), 1, fp);     //3
-			fwrite(fatL, sizeof(__int16_t), 1, fp);     //4
-			fwrite(dataS, sizeof(__int16_t), 1, fp);    //5
-			fwrite(dataL, sizeof(__int16_t), 1, fp);    //6
-			fwrite(diskName, sizeof(char[32]), 1, fp);  //7 - Disk Name
+			fwrite(sector, sizeof(__int16_t), 1, fp);   // 0
+			fwrite(cluster, sizeof(__int16_t), 1, fp);  // 1
+			fwrite(disk, sizeof(__int16_t), 1, fp);     // 2
+			fwrite(fatS, sizeof(__int16_t), 1, fp);     // 3
+			fwrite(fatL, sizeof(__int16_t), 1, fp);     // 4
+			fwrite(dataS, sizeof(__int16_t), 1, fp);    // 5
+			fwrite(dataL, sizeof(__int16_t), 1, fp);    // 6
+			fwrite(diskName, sizeof(char[32]), 1, fp);  // 7 - Disk Name
 	    	// total MBR size = 46 bytes
 			
 			__int8_t buffer[1] = {0};
 			
-			fwrite(buffer, sizeof(__int8_t), 3, fp); // write in 3 buffer bytes to set MBR at 49 bytes
+			fwrite(buffer, sizeof(__int8_t), 3, fp);                   // write in 3 buffer bytes to set MBR at 49 bytes
 		
 			__int16_t unallocatedCluster[1] = {0xFFFF};
 			__int128_t unusedSector[1] = {0xFFFF};
 			
-			for(int i = 0;i<diskSize;i++) // write FAT entry for each cluster
+			for(int i = 0;i<diskSize;i++)                              // write FAT entry for each cluster
 			{
 				fwrite(unallocatedCluster, sizeof(__int16_t), 1, fp);
 			}
 			
-			for(int i = 0;i<diskSize;i++) // write empty clusters to disk
+			for(int i = 0;i<diskSize;i++)                              // write empty clusters to disk
 			{
 			fwrite(unusedSector, sizeof(__int128_t), clusterSize, fp); // write (clusterSize) unused sectors per cluster
 			}
 			
 			// initialize root directory
 			
-			fseek(fp, START_OF_FAT, SEEK_SET);                    // seek to first FAT entry
+			fseek(fp, START_OF_FAT, SEEK_SET);                         // seek to first FAT entry
 			__int16_t allocatedCluster[1] = {0};            
-			fwrite(allocatedCluster, sizeof(__int16_t), 1, fp);   // write entry for root directory
+			fwrite(allocatedCluster, sizeof(__int16_t), 1, fp);        // write entry for root directory
 						
-			fseek(fp, 20051, SEEK_SET);                    // seek to the 20051 byte of the file - return to beginning of data
+			fseek(fp, 20051, SEEK_SET);                                // seek to the 20051 byte of the file - return to beginning of data
 			
-			__int8_t entry_type[1]     = {0};              // indicates if file or directory - 0 - directory 1 - file  - 1 byte
+			__int8_t entry_type[1]     = {0};                          // indicates if file or directory - 0 - directory 1 - file  - 1 byte
 			fwrite(entry_type, sizeof(__int8_t), 1, fp);
 			
-			__int16_t creation_time[1] = {7};              // creation time - 2 bytes
+			__int16_t creation_time[1] = {7};                          // creation time - 2 bytes
 			fwrite(creation_time, sizeof(__int16_t), 1, fp);
 			
-			__int16_t creation_date[1] = {8};              // creation date - 2 bytes
+			__int16_t creation_date[1] = {8};                          // creation date - 2 bytes
 			fwrite(creation_date, sizeof(__int16_t), 1, fp);
 			
-			__int8_t length_of_entry_name[1]  = {4};       // length of entry name 2 bytes
+			__int8_t length_of_entry_name[1]  = {4};                   // length of entry name 2 bytes
 			fwrite(length_of_entry_name, sizeof(__int8_t), 1, fp);
 			
-			char entryName[16] = {"root"};                 // file-directory name - 16 bytes
+			char entryName[16] = {"root"};                             // file-directory name - 16 bytes
 			fwrite(entryName, sizeof(char[16]), 1, fp);
 			
-			__int32_t file_size[1] = {0}; 	                // file size - 2 bytes - should be zero for directories
+			__int32_t file_size[1] = {0}; 	                            // file size - 2 bytes - should be zero for directories
 			fwrite(file_size, sizeof(__int32_t), 1, fp);
 			
-			__int8_t pointer_type[1]  = {1};              // pointer type - 0 = pointer to a file, 1 = pointer to a directory, 2 = pointer to another entry describing more children for this directory)
+			__int8_t pointer_type[1]  = {1};                           // pointer type - 0 = pointer to a file, 1 = pointer to a directory, 2 = pointer to another entry describing more children for this directory)
 			fwrite(pointer_type, sizeof(__int8_t), 1, fp);
 			
-			__int8_t reserved[1]  = {0};                  // reserved - 1 byte
+			__int8_t reserved[1]  = {0};                               // reserved - 1 byte
 			fwrite(reserved, sizeof(__int8_t), 1, fp);
 			
-			__int32_t start_pointer[1] = {0};             // - points to the start of the entry describing the child - 2 bytes
+			__int32_t start_pointer[1] = {0};                          // points to the start of the entry describing the child - 2 bytes
 			fwrite(start_pointer, sizeof(__int32_t), 1, fp);
 			}
 			
@@ -132,7 +133,8 @@ int fs_opendir(char *diskname, char *absolute_path) // returns an integer that r
 	char* s;
 	if(strncmp("/",absolute_path, 1)==0) // root directory
 	{
-		
+		printf("Root directory. Data index: %d",clusters*2+START_OF_FAT+1); // start of root directory
+		return(clusters*2+START_OF_FAT+1);
 	}
 	else
 	{
@@ -150,9 +152,24 @@ int fs_opendir(char *diskname, char *absolute_path) // returns an integer that r
 }
 
 
-void fs_mkdir(int dh, char *child_name)
+void fs_mkdir(char *diskname, int dh, char *child_name)
 {
-	
+	__int16_t unallocatedCluster[1] = {0xFFFF};
+	FILE *fp;
+	fp=fopen(diskname, "wb+");
+	// step 1: search FAT for unallocated cluster
+	__int16_t result[clusters];
+	fseek(fp, START_OF_FAT, SEEK_SET);
+	fread(result, sizeof(__int16_t), clusters, fp);
+	for (int i = 0; i < clusters; i++)
+	{
+		//printf("%d",result);
+		if((int)result[i]==0)
+		{
+			printf("\nFound an empty cluster at index: %d\n",START_OF_FAT+i+1 );
+			break;
+		}
+	}
 }
 
 
@@ -225,5 +242,7 @@ int main(int argc, char *argv[]) {
 			printf("%s",ctime(&currentTime));
 			char directory[12] = {"/hello"};
 			fs_opendir("/Volumes/USB20FD/OSHW4/test.bin",directory);
+			
+	fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", 1, "test");
 	
 }
