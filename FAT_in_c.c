@@ -36,6 +36,7 @@ typedef struct __attribute__ ((__packed__)) { // size = 32 bytes
 	__uint8_t	type;
 	__uint8_t reserved;
 	__uint16_t start;
+	char		childName[32];
 } entry_ptr_t;
 
 
@@ -171,7 +172,7 @@ int fs_opendir(char *diskname, char *absolute_path) // returns an integer that r
 {
 	FILE *fp;
 	fp=fopen(diskname, "rb+");
-	char* s;
+	char *s;
 	if(strncmp("/",absolute_path, 1)==0 && strlen(absolute_path)==1) // root directory
 	{
 		printf("\nRoot directory. Data index: %d",clusters*2+START_OF_FAT+1); // start of root directory
@@ -179,14 +180,14 @@ int fs_opendir(char *diskname, char *absolute_path) // returns an integer that r
 	}
 	else
 	{
-	s = strtok(absolute_path, "/");
-	
-	/* walk through other tokens */
-	   while( s != NULL ) 
-	   {
-	      printf( "%s\n", s );
-	      s = strtok(NULL, "/");
-	   }
+	char str[32];
+	strcpy(str, absolute_path);
+	char *tok = strtok(str, "/");
+//printf("%s",str);
+	  while (tok != NULL) {
+	    printf("%s\n", tok);
+	    tok = strtok(NULL, "/");
+	  }
 	}
 	fclose(fp);
 	return 0;
@@ -205,7 +206,9 @@ int fs_opendir2(char *diskname, char *absolute_path) // returns an integer that 
 	}
 	else
 	{
-	s = strtok(absolute_path, "/");
+	char str[32];
+	strcpy(str,absolute_path);
+	s = strtok(str, "/");
 	__int32_t pointerCounter[1];
 	fseek(fp, clusters*2+START_OF_FAT+1+40, SEEK_SET);// 40 start of pointer - seek to parent directory to set pointer(s) -> need to increment # of pointers + add alll
 	fread(pointerCounter, sizeof(__int32_t), 1, fp);
@@ -237,7 +240,6 @@ void fs_mkdir(char *diskname, int dh, char *child_name) // FAT indicies start fr
 	__int16_t unallocatedCluster[1] = {0xFFFF};
 	FILE *fp;
 	fp=fopen(diskname, "rb+");
-	
 	// step 1: search FAT for unallocated cluster
 	__int16_t result[clusters];
 	fseek(fp, START_OF_FAT, SEEK_SET);
@@ -381,7 +383,7 @@ int main(int argc, char *argv[]) {
 			printf("%s",ctime(&currentTime));
 			//char directory[12] = {"/"};
 			
-	for(int i = 0; i<200; i++)
+	for(int i = 0; i<1; i++)
 	{		
 	fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir("/Volumes/USB20FD/OSHW4/test.bin","/"), "folder");
 	}
@@ -391,6 +393,6 @@ int main(int argc, char *argv[]) {
 		//fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir("/Volumes/USB20FD/OSHW4/test.bin","/"), "new");
 		//fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir("/Volumes/USB20FD/OSHW4/test.bin","/"), "folder");
 		
-	fs_opendir2("/Volumes/USB20FD/OSHW4/test.bin","/folder");
+	fs_opendir2("/Volumes/USB20FD/OSHW4/test.bin","/folder/new");
 	
 }
