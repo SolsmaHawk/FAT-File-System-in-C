@@ -5,7 +5,8 @@
 #include <string.h>
 
 #define START_OF_FAT 50
-
+#define FILE_INFO_SIZE_WITH_COUNTER 44 // 40 bytes + 4 bytes to hold pointer counter
+#define FILE_INFO_SIZE 40 // 40 bytes
 
 /**
 entry_type (1 byte) - indicates if this is a file/directory (0 - file, 1 - directory)
@@ -31,7 +32,7 @@ reserved (1 byte)
 start_pointer (2 bytes) - points to the start of the entry describing the child 
 **/
 
-typedef struct __attribute__ ((__packed__)) {
+typedef struct __attribute__ ((__packed__)) { // size = 32 bytes
 	__uint8_t	type;
 	__uint8_t reserved;
 	__uint16_t start;
@@ -141,14 +142,14 @@ int formatDisk(FILE *fileToFormat, char *diskName, __int16_t sectorSize, __int16
 			entry_ptr_counter_t newCounter[1] = {pointerCounter};      // pointer counter - 4 bytes - keeps track of the number of children directories / files
 			fwrite(newCounter, sizeof(__int32_t), 1, fp);          
 			
-			__int8_t pointer_type[1]  = {1};                           // pointer type - 0 = pointer to a file, 1 = pointer to a directory, 2 = pointer to another entry describing more children for this directory)
-			fwrite(pointer_type, sizeof(__int8_t), 1, fp);
+			//__int8_t pointer_type[1]  = {1};                           // pointer type - 0 = pointer to a file, 1 = pointer to a directory, 2 = pointer to another entry describing more children for this directory)
+			//fwrite(pointer_type, sizeof(__int8_t), 1, fp);
 			
-			__int8_t reserved[1]  = {0};                               // reserved - 1 byte
-			fwrite(reserved, sizeof(__int8_t), 1, fp);
+		//	__int8_t reserved[1]  = {0};                               // reserved - 1 byte
+			//fwrite(reserved, sizeof(__int8_t), 1, fp);
 			
-			__int32_t start_pointer[1] = {0};                          // points to the start of the entry describing the child - 2 bytes
-			fwrite(start_pointer, sizeof(__int32_t), 1, fp);
+			//__int32_t start_pointer[1] = {0};                          // points to the start of the entry describing the child - 2 bytes
+			//fwrite(start_pointer, sizeof(__int32_t), 1, fp);
 			}
 			
 			
@@ -171,7 +172,7 @@ int fs_opendir(char *diskname, char *absolute_path) // returns an integer that r
 	FILE *fp;
 	fp=fopen(diskname, "rb+");
 	char* s;
-	if(strncmp("/",absolute_path, 1)==0) // root directory
+	if(strncmp("/",absolute_path, 1)==0 && strlen(absolute_path)==1) // root directory
 	{
 		printf("\nRoot directory. Data index: %d",clusters*2+START_OF_FAT+1); // start of root directory
 		return(clusters*2+START_OF_FAT+1);
@@ -185,6 +186,45 @@ int fs_opendir(char *diskname, char *absolute_path) // returns an integer that r
 	   {
 	      printf( "%s\n", s );
 	      s = strtok(NULL, "/");
+	   }
+	}
+	fclose(fp);
+	return 0;
+}
+
+
+int fs_opendir2(char *diskname, char *absolute_path) // returns an integer that returns a handler to the directory pointed by absolute path ex: /root/new/
+{
+	FILE *fp;
+	fp=fopen(diskname, "rb+");
+	char* s;
+	if(strncmp("/",absolute_path, 1)==0 && strlen(absolute_path)==1) // root directory
+	{
+		printf("\nRoot directory. Data index: %d",clusters*2+START_OF_FAT+1); // start of root directory
+		return(clusters*2+START_OF_FAT+1);
+	}
+	else
+	{
+	s = strtok(absolute_path, "/");
+	__int32_t pointerCounter[1];
+	fseek(fp, clusters*2+START_OF_FAT+1+40, SEEK_SET);// 40 start of pointer - seek to parent directory to set pointer(s) -> need to increment # of pointers + add alll
+	fread(pointerCounter, sizeof(__int32_t), 1, fp);
+	fseek(fp, clusters*2+START_OF_FAT+1+40+2, SEEK_SET);
+	int positionToOpen;
+	/* walk through other tokens */
+	   while( s != NULL ) 
+	   {
+	      printf( "%s\n", s );
+	      s = strtok(NULL, "/");
+	// step 1 - search root directory for child matching first token
+	__int32_t nextPointer[1];
+	for(__int32_t i = 0; i <*pointerCounter; i++)
+	{
+		//printf("Pointers found in this directory: %d",*pointerCounter);
+		fread(nextPointer, sizeof(__int32_t), 1, fp);
+		//printf("\n%d",*nextPointer);
+	}
+	
 	   }
 	}
 	fclose(fp);
@@ -224,8 +264,9 @@ void fs_mkdir(char *diskname, int dh, char *child_name) // FAT indicies start fr
 			__int32_t updatedCounter[1] = {pointerCounter[0]+1};  // increment pointer counter
 			fseek(fp, dh+40, SEEK_SET);                           // return to beginning of pointer counter
 			fwrite(updatedCounter, sizeof(__int32_t), 1, fp);     // write modified counter back to disk
-			fseek(fp, dh+44+((pointerCounter[0]+1)*4), SEEK_SET); // seek to new child directory / file pointer location =  directoryHandler + 44 * (updatedCounter*4)
+			fseek(fp, dh+FILE_INFO_SIZE_WITH_COUNTER+((pointerCounter[0]+1)*4), SEEK_SET); //*** seek to new child directory / file pointer location =  directoryHandler + 44 * (updatedCounter*4)
 			__int32_t childPointer[1] = {START_OF_FAT+i};
+			//write entry pointer
 			fwrite(childPointer, sizeof(__int32_t), 1, fp);       // write pointer = START_OF_FAT+i
 			
 			// step 4: mark FAT as allocated - directory
@@ -238,14 +279,26 @@ void fs_mkdir(char *diskname, int dh, char *child_name) // FAT indicies start fr
 			fseek(fp, dh+i+newCluster, SEEK_SET);                 // return to dh + cluster offset
 			entry_t dataToWrite[1] = {directoryInfo};
 			fwrite(dataToWrite, sizeof(__int128_t), 1, fp);       // write new directory to cluster
+			
+			// step 6: set beginning pointers and pointer counter
+			//entry_ptr_t newDirectoryPointer;
+			//entry_ptr_counter_t newDirectoryPointerCounter;
+			//newDirectoryPointer.type
 			printf("\nNew directory created: %s    Starting at byte: %d",child_name, dh+i+newCluster);
-			printf("\nNumber of children in subdirectory: %d\n",pointerCounter[0]);
+			printf("\nNumber of children in subdirectory: %d\n",pointerCounter[0]+1);
 			break;
 		}
 	}
 }
 
 /*
+
+typedef struct __attribute__ ((__packed__)) {
+	__uint8_t	type;
+	__uint8_t reserved;
+	__uint16_t start;
+} entry_ptr_t;
+
 
 typedef struct __attribute__ ((__packed__)) {
 	__uint8_t		entry_type;
@@ -328,7 +381,7 @@ int main(int argc, char *argv[]) {
 			printf("%s",ctime(&currentTime));
 			//char directory[12] = {"/"};
 			
-	for(int i = 0; i<100; i++)
+	for(int i = 0; i<200; i++)
 	{		
 	fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir("/Volumes/USB20FD/OSHW4/test.bin","/"), "folder");
 	}
@@ -338,6 +391,6 @@ int main(int argc, char *argv[]) {
 		//fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir("/Volumes/USB20FD/OSHW4/test.bin","/"), "new");
 		//fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir("/Volumes/USB20FD/OSHW4/test.bin","/"), "folder");
 		
-	
+	fs_opendir2("/Volumes/USB20FD/OSHW4/test.bin","/folder");
 	
 }
