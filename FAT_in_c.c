@@ -7,11 +7,35 @@
 #define START_OF_FAT 50
 
 
-struct  __attribute__ ((__packed__)) {
- 	__int16_t a;
- 	char b;
-} packet_t;
+/**
+entry_type (1 byte) - indicates if this is a file/directory (0 - file, 1 - directory)
+creation_time (2 bytes) - format described below
+creation_date (2 bytes) - format described below
+length of entry name (1 byte)  
+entry name (16 bytes) - the file/directory name
+size (4 bytes) - the size of the file in bytes. Should be zero for directories:
+**/
 
+typedef struct __attribute__ ((__packed__)) {
+	__uint8_t		entry_type;
+	__uint16_t	creation_time, creation_data;
+	__uint8_t		name_len;
+	char		name[16];
+	__uint32_t	size;
+} entry_t;
+
+
+/**
+pointer type (1 byte) - (0 = pointer to a file, 1 = pointer to a directory, 2 = pointer to another entry describing more children for this directory)
+reserved (1 byte)
+start_pointer (2 bytes) - points to the start of the entry describing the child 
+**/
+
+typedef struct __attribute__ ((__packed__)) {
+	__uint8_t	type;
+	__uint8_t reserved;
+	__uint16_t start;
+} entry_ptr_t;
 
 
 
@@ -152,7 +176,7 @@ int fs_opendir(char *diskname, char *absolute_path) // returns an integer that r
 }
 
 
-void fs_mkdir(char *diskname, int dh, char *child_name)
+void fs_mkdir(char *diskname, int dh, char *child_name) // FAT indicies start from 0 - relative from 50
 {
 	__int16_t unallocatedCluster[1] = {0xFFFF};
 	FILE *fp;
@@ -164,9 +188,13 @@ void fs_mkdir(char *diskname, int dh, char *child_name)
 	for (int i = 0; i < clusters; i++)
 	{
 		//printf("%d",result);
-		if((int)result[i]==0)
+		if((int)result[i]==*unallocatedCluster)
 		{
-			printf("\nFound an empty cluster at index: %d\n",START_OF_FAT+i+1 );
+			printf("\nFound an empty cluster at index: %d\n",START_OF_FAT+i);
+			entry_t directoryInfo;
+			
+			directoryInfo.entry_type= 1;  // indicates this is a directory
+			
 			break;
 		}
 	}
@@ -240,9 +268,9 @@ int main(int argc, char *argv[]) {
 	time_t currentTime;
 			currentTime = time(NULL);
 			printf("%s",ctime(&currentTime));
-			char directory[12] = {"/hello"};
-			fs_opendir("/Volumes/USB20FD/OSHW4/test.bin",directory);
+			//char directory[12] = {"/"};
 			
-	fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", 1, "test");
+			
+	fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir("/Volumes/USB20FD/OSHW4/test.bin","/"), "newfolder");
 	
 }
