@@ -213,7 +213,7 @@ void fs_mkdir(char *diskname, int dh, char *child_name) // FAT indicies start fr
 			
 			// step 4: mark FAT as allocated - directory
 			__int16_t allocatedCluster[1] = {0};
-			fseek(fp, START_OF_FAT+i, SEEK_SET);                  // return to FAT Entry
+			fseek(fp, START_OF_FAT+i*2, SEEK_SET);                  // return to FAT Entry
 			fwrite(allocatedCluster, sizeof(__int16_t), 1, fp);   // mark as used
 			
 			// step 5: write new directory to previously unallocated cluster
@@ -312,7 +312,12 @@ int main(int argc, char *argv[]) {
 			
 			
 	fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir("/Volumes/USB20FD/OSHW4/test.bin","/"), "folder");
+	fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir("/Volumes/USB20FD/OSHW4/test.bin","/"), "new");
 	fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir("/Volumes/USB20FD/OSHW4/test.bin","/"), "folder");
+	fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir("/Volumes/USB20FD/OSHW4/test.bin","/"), "folder");
+		fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir("/Volumes/USB20FD/OSHW4/test.bin","/"), "new");
+		fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir("/Volumes/USB20FD/OSHW4/test.bin","/"), "folder");
+		
 	
 	
 }
