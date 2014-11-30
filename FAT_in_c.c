@@ -78,9 +78,9 @@ int formatDisk(FILE *fileToFormat, char *diskName, __int16_t sectorSize, __int16
 	__int16_t fatL[1]      = {fatLength};        // length of the FAT
 	__int16_t dataS[1]     = {dataStart};        // start of the data
 	__int16_t dataL[1]     = {dataLength};       // length of the data
-	entry_ptr_counter_t pointerCounter;
-	pointerCounter.counter = 0;
-
+	//entry_ptr_counter_t pointerCounter;
+	//pointerCounter.counter = 0;
+	             // counts number of children directories / files 
 	    fp=fopen(diskName, "wb+");
 
 	    if(fp != NULL)
@@ -129,7 +129,7 @@ int formatDisk(FILE *fileToFormat, char *diskName, __int16_t sectorSize, __int16
 			__int16_t creation_date[1] = {8};                          // creation date - 2 bytes
 			fwrite(creation_date, sizeof(__int16_t), 1, fp);
 			
-			__int8_t length_of_entry_name[1]  = {4};                   // length of entry name 2 bytes
+			__int8_t length_of_entry_name[1]  = {4};                   // length of entry name 1 bytes
 			fwrite(length_of_entry_name, sizeof(__int8_t), 1, fp);
 			
 			char entryName[32] = {"root"};                             // file-directory name - 32 bytes
@@ -138,8 +138,8 @@ int formatDisk(FILE *fileToFormat, char *diskName, __int16_t sectorSize, __int16
 			__int32_t file_size[1] = {0}; 	                            // file size - 2 bytes - should be zero for directories
 			fwrite(file_size, sizeof(__int32_t), 1, fp);
 			
-			entry_ptr_counter_t newCounter[1] = {pointerCounter};      // pointer counter - 4 bytes - keeps track of the number of children directories / files
-			fwrite(newCounter, sizeof(__int32_t), 1, fp);          
+			__int16_t pointerCounter[1] = {0};      // pointer counter - 2 bytes - keeps track of the number of children directories / files
+			fwrite(pointerCounter, sizeof(__int16_t), 1, fp);          
 			
 			__int8_t pointer_type[1]  = {1};                           // pointer type - 0 = pointer to a file, 1 = pointer to a directory, 2 = pointer to another entry describing more children for this directory)
 			fwrite(pointer_type, sizeof(__int8_t), 1, fp);
@@ -218,9 +218,12 @@ void fs_mkdir(char *diskname, int dh, char *child_name) // FAT indicies start fr
 			//printf("%s",directoryInfo.name);
 			
 			// step 3: set parent directory to point to new child
-			__int32_t pointerCounter[1];
+			__int16_t pointerCounter[1];
 			fseek(fp, dh+40, SEEK_SET);                   // 40 start of pointer - seek to parent directory to set pointer(s) -> need to increment # of pointers + add alll
-			fread(pointerCounter, sizeof(__int32_t), 1, fp);
+			fread(pointerCounter, sizeof(__int16_t), 1, fp);
+			__int16_t updatedCounter[1] = {pointerCounter[0]+1};
+			fseek(fp, dh+40, SEEK_SET);
+			fwrite(updatedCounter, sizeof(__int16_t), 1, fp);
 			printf("\n%d",pointerCounter[0]);
 			__int32_t childPointer[1] = {START_OF_FAT+i};
 			fwrite(childPointer, sizeof(__int32_t), 1, fp);
