@@ -129,7 +129,7 @@ int formatDisk(FILE *fileToFormat, char *diskName, __int16_t sectorSize, __int16
 int fs_opendir(char *diskname, char *absolute_path) // returns an integer that returns a handler to the directory pointed by absolute path ex: /root/new/
 {
 	FILE *fp;
-	fp=fopen(diskname, "wb+");
+	fp=fopen(diskname, "rb+");
 	char* s;
 	if(strncmp("/",absolute_path, 1)==0) // root directory
 	{
@@ -156,7 +156,7 @@ void fs_mkdir(char *diskname, int dh, char *child_name)
 {
 	__int16_t unallocatedCluster[1] = {0xFFFF};
 	FILE *fp;
-	fp=fopen(diskname, "wb+");
+	fp=fopen(diskname, "rb+");
 	// step 1: search FAT for unallocated cluster
 	__int16_t result[clusters];
 	fseek(fp, START_OF_FAT, SEEK_SET);
@@ -235,7 +235,7 @@ int main(int argc, char *argv[]) {
 
 	time ( &rawtime );
 	timeinfo = localtime ( &rawtime );
-	printf ( "\n Current local time and date: %s", asctime (timeinfo) );
+	printf ( "\nCurrent local time and date: %s", asctime (timeinfo) );
 	
 	time_t currentTime;
 			currentTime = time(NULL);
