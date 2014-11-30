@@ -220,17 +220,17 @@ void fs_mkdir(char *diskname, int dh, char *child_name) // FAT indicies start fr
 			// step 3: set parent directory to point to new child
 			__int32_t pointerCounter[1];
 			fseek(fp, dh+40, SEEK_SET);                   // 40 start of pointer - seek to parent directory to set pointer(s) -> need to increment # of pointers + add alll
-			fread(pointerCounter, sizeof(__int32_t), 1, fp);
-			__int32_t updatedCounter[1] = {pointerCounter[0]+1};
-			fseek(fp, dh+40, SEEK_SET);
-			fwrite(updatedCounter, sizeof(__int32_t), 1, fp);
-			printf("\n%d",pointerCounter[0]);
+			fread(pointerCounter, sizeof(__int32_t), 1, fp);      // read pointer counter
+			__int32_t updatedCounter[1] = {pointerCounter[0]+1};  // increment pointer counter
+			fseek(fp, dh+40, SEEK_SET);                           // return to beginning of pointer counter
+			fwrite(updatedCounter, sizeof(__int32_t), 1, fp);     // write modified counter back to disk
+			fseek(fp, dh+44+((pointerCounter[0]+1)*4), SEEK_SET); // seek to new child directory / file pointer location =  directoryHandler + 44 * (updatedCounter*4)
 			__int32_t childPointer[1] = {START_OF_FAT+i};
-			fwrite(childPointer, sizeof(__int32_t), 1, fp);
+			fwrite(childPointer, sizeof(__int32_t), 1, fp);       // write pointer = START_OF_FAT+i
 			
 			// step 4: mark FAT as allocated - directory
 			__int16_t allocatedCluster[1] = {0};
-			fseek(fp, START_OF_FAT+i*2, SEEK_SET);                  // return to FAT Entry  convert index to to 32 bit entry by multiplying by 2
+			fseek(fp, START_OF_FAT+i*2, SEEK_SET);                // return to FAT Entry  convert index to to 32 bit entry by multiplying by 2
 			fwrite(allocatedCluster, sizeof(__int16_t), 1, fp);   // mark as used
 			
 			// step 5: write new directory to previously unallocated cluster
@@ -238,7 +238,8 @@ void fs_mkdir(char *diskname, int dh, char *child_name) // FAT indicies start fr
 			fseek(fp, dh+i+newCluster, SEEK_SET);                 // return to dh + cluster offset
 			entry_t dataToWrite[1] = {directoryInfo};
 			fwrite(dataToWrite, sizeof(__int128_t), 1, fp);       // write new directory to cluster
-			printf("\nNew directory created: %s    Starting at byte: %d",child_name, dh+i+newCluster); 
+			printf("\nNew directory created: %s    Starting at byte: %d",child_name, dh+i+newCluster);
+			printf("\nNumber of children in subdirectory: %d\n",pointerCounter[0]);
 			break;
 		}
 	}
