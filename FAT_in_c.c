@@ -243,6 +243,7 @@ int fs_opendir2(char *diskname, char *absolute_path) // returns an integer that 
 int fs_opendir3(char *diskname, char *absolute_path) // returns an integer that returns a handler to the directory pointed by absolute path ex: /root/new/
 {
 	FILE *fp;
+	int directoryIndex;
 	fp=fopen(diskname, "rb+");
 	char *s;
 	__int32_t pointerCounter[1];
@@ -259,17 +260,30 @@ int fs_opendir3(char *diskname, char *absolute_path) // returns an integer that 
 		printf("%d",(int)pointerCounter[0]);
 		fseek(fp, startOfData+FILE_INFO_SIZE_WITH_COUNTER, SEEK_SET);
 		entry_ptr_t pointersFromRoot[1];
-		fread(pointersFromRoot, sizeof(entry_ptr_t), 1, fp);  // read first child directory
-		printf("%s",pointersFromRoot[0].childName);
-		printf("%d",startOfData+FILE_INFO_SIZE_WITH_COUNTER);
+		//fread(pointersFromRoot, sizeof(entry_ptr_t), 1, fp);  // read first child directory
+		//printf("%s",pointersFromRoot[0].childName);
+	//	printf("%d",startOfData+FILE_INFO_SIZE_WITH_COUNTER);
 	char str[32];
 	strcpy(str, absolute_path);
 	char *tok = strtok(str, "/");
 //printf("%s",str);
-	  while (tok != NULL) {
+	  while (tok != NULL) {                                      // loop through tokens
+		for(__int32_t i = 1; i <*pointerCounter; i++)             // read through pointers
+		{
+			fread(pointersFromRoot, sizeof(entry_ptr_t), 1, fp);  // read first child directory
+			printf("%s+%s",pointersFromRoot[0].childName,tok);
+			if(strcmp(pointersFromRoot[0].childName, tok)==0)     // if pointer equals a token, the directory was found
+			{
+				printf("YAAAAAAAAAAAAAAY");
+				directoryIndex = pointersFromRoot[0].start;        // set directory index
+				fseek(fp, directoryIndex+FILE_INFO_SIZE_WITH_COUNTER, SEEK_SET);  // jump to the next directory and continue pointer search
+			}
+		}
 	    printf("%s\n", tok);
 	    tok = strtok(NULL, "/");
 	  }
+	fclose(fp);
+	return directoryIndex;
 	}
 	fclose(fp);
 	return 0;
