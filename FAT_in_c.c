@@ -239,6 +239,44 @@ int fs_opendir2(char *diskname, char *absolute_path) // returns an integer that 
 }
 
 
+
+int fs_opendir3(char *diskname, char *absolute_path) // returns an integer that returns a handler to the directory pointed by absolute path ex: /root/new/
+{
+	FILE *fp;
+	fp=fopen(diskname, "rb+");
+	char *s;
+	__int32_t pointerCounter[1];
+	if(strncmp("/",absolute_path, 1)==0 && strlen(absolute_path)==1) // root directory
+	{
+		printf("\nRoot directory. Data index: %d",clusters*2+START_OF_FAT+1); // start of root directory
+		return(clusters*2+START_OF_FAT+1);
+	}
+	else
+	{
+		__int32_t pointerCounter[1];      // stores number of children pointers in directory
+		fseek(fp, startOfData+40, SEEK_SET);// 40 start of pointer - seek to parent directory to set pointer(s) -> need to increment # of pointers + add alll
+		fread(pointerCounter, sizeof(__int32_t), 1, fp);
+		printf("%d",(int)pointerCounter[0]);
+		fseek(fp, startOfData+FILE_INFO_SIZE_WITH_COUNTER, SEEK_SET);
+		entry_ptr_t pointersFromRoot[1];
+		fread(pointersFromRoot, sizeof(entry_ptr_t), 1, fp);  // read first child directory
+		printf("%s",pointersFromRoot[0].childName);
+		printf("%d",startOfData+FILE_INFO_SIZE_WITH_COUNTER);
+	char str[32];
+	strcpy(str, absolute_path);
+	char *tok = strtok(str, "/");
+//printf("%s",str);
+	  while (tok != NULL) {
+	    printf("%s\n", tok);
+	    tok = strtok(NULL, "/");
+	  }
+	}
+	fclose(fp);
+	return 0;
+}
+
+
+
 void fs_mkdir(char *diskname, int dh, char *child_name) // FAT indicies start from 0 - relative from 50
 {
 	__int16_t unallocatedCluster[1] = {0xFFFF};
@@ -277,6 +315,7 @@ void fs_mkdir(char *diskname, int dh, char *child_name) // FAT indicies start fr
 			fseek(fp, dh+40, SEEK_SET);                           // return to beginning of pointer counter
 			fwrite(updatedCounter, sizeof(__int32_t), 1, fp);     // write modified counter back to disk
 			fseek(fp, dh+FILE_INFO_SIZE_WITH_COUNTER+((pointerCounter[0])*sizeof(entry_ptr_t)), SEEK_SET); //*** seek to new child directory / file pointer location =  directoryHandler + 44 * (updatedCounter*4)
+		//	printf("\n%lu",dh+FILE_INFO_SIZE_WITH_COUNTER+((pointerCounter[0])*sizeof(entry_ptr_t)));
 			__int32_t childPointer[1] = {START_OF_FAT+i};
 			//write entry pointer
 			entry_ptr_t newPointer;
@@ -299,12 +338,8 @@ void fs_mkdir(char *diskname, int dh, char *child_name) // FAT indicies start fr
 			
 			fseek(fp, dh+i+newCluster, SEEK_SET);                 // return to dh + cluster offset
 			entry_t dataToWrite[1] = {directoryInfo};
-			fwrite(dataToWrite, sizeof(__int128_t), 1, fp);       // write new directory to cluster
-			
-			// step 6: set beginning pointers and pointer counter
-			//entry_ptr_t newDirectoryPointer;
-			//entry_ptr_counter_t newDirectoryPointerCounter;
-			//newDirectoryPointer.type
+			fwrite(dataToWrite, sizeof(entry_t), 1, fp);       // write new directory to cluster
+
 			printf("\nNew directory created: %s    Starting at byte: %d",child_name, dh+i+newCluster);
 			printf("\nNumber of children in subdirectory: %d\n",pointerCounter[0]+1);
 			break;
@@ -413,6 +448,6 @@ int main(int argc, char *argv[]) {
 		//fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir("/Volumes/USB20FD/OSHW4/test.bin","/"), "new");
 		//fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir("/Volumes/USB20FD/OSHW4/test.bin","/"), "folder");
 		
-	//fs_opendir2("/Volumes/USB20FD/OSHW4/test.bin","/folder");
+	fs_opendir3("/Volumes/USB20FD/OSHW4/test.bin","/folder");
 	
 }
