@@ -262,24 +262,46 @@ int fs_opendir3(char *diskname, char *absolute_path) // returns an integer that 
 		entry_ptr_t pointersFromRoot[1];
 		//fread(pointersFromRoot, sizeof(entry_ptr_t), 1, fp);  // read first child directory
 		//printf("%s",pointersFromRoot[0].childName);
-	//	printf("%d",startOfData+FILE_INFO_SIZE_WITH_COUNTER);
-	char str[32];
-	strcpy(str, absolute_path);
-	char *tok = strtok(str, "/");
-//printf("%s",str);
-	  while (tok != NULL) {                                      // loop through tokens
-		for(__int32_t i = 1; i <*pointerCounter; i++)             // read through pointers
-		{
-			fread(pointersFromRoot, sizeof(entry_ptr_t), 1, fp);  // read first child directory
-			//printf("%s+%s",pointersFromRoot[0].childName,tok);
-			if(strcmp(pointersFromRoot[0].childName, tok)==0)     // if pointer equals a token, the directory was found
+		//	printf("%d",startOfData+FILE_INFO_SIZE_WITH_COUNTER);
+		char str[32];
+		strcpy(str, absolute_path);
+		char *tok = strtok(str, "/");
+		//printf("%s",str);
+		while (tok != NULL) {                                     // loop through tokens
+			if(*pointerCounter>1)
 			{
-				//printf("YAAAAAAAAAAAAAAY");
-				directoryIndex = pointersFromRoot[0].start;        // set directory index
-				//printf("\nHere is the directory index:%d",directoryIndex);
-				fseek(fp, directoryIndex+FILE_INFO_SIZE_WITH_COUNTER, SEEK_SET);  // jump to the next directory and continue pointer search
-			}
+				for(__int32_t i = 1; i <*pointerCounter; i++)             // read through pointers
+				{
+					fread(pointersFromRoot, sizeof(entry_ptr_t), 1, fp);  // read first child directory
+					//printf("%s+%s",pointersFromRoot[0].childName,tok);
+					if(strcmp(pointersFromRoot[0].childName, tok)==0)     // if pointer equals a token, the directory was found
+					{
+						//printf("YAAAAAAAAAAAAAAY");
+						directoryIndex = pointersFromRoot[0].start;        // set directory index
+						//printf("\nHere is the directory index:%d",directoryIndex);
+						fseek(fp, directoryIndex+FILE_INFO_SIZE_WITH_COUNTER, SEEK_SET);  // jump to the next directory and continue pointer search
+					}
+				}
+			
 		}
+		else // special case where only one directory exists
+		{
+		
+			for(__int32_t i = 1; i <*pointerCounter+1; i++)             // read through pointers
+			{
+				fread(pointersFromRoot, sizeof(entry_ptr_t), 1, fp);  // read first child directory
+				//printf("%s+%s",pointersFromRoot[0].childName,tok);
+				if(strcmp(pointersFromRoot[0].childName, tok)==0)     // if pointer equals a token, the directory was found
+				{
+					//printf("YAAAAAAAAAAAAAAY");
+					directoryIndex = pointersFromRoot[0].start;        // set directory index
+					//printf("\nHere is the directory index:%d",directoryIndex);
+					fseek(fp, directoryIndex+FILE_INFO_SIZE_WITH_COUNTER, SEEK_SET);  // jump to the next directory and continue pointer search
+				}
+			}
+			
+		}
+		
 	   // printf("%s\n", tok);
 	    tok = strtok(NULL, "/");
 	  }
@@ -453,11 +475,13 @@ int main(int argc, char *argv[]) {
 			printf("%s",ctime(&currentTime));
 			//char directory[12] = {"/"};
 			
-	for(int i = 0; i<1; i++)
-	{		
+	//for(int i = 0; i<1; i++)
+	//{	
+	//int test = fs_opendir3("/Volumes/USB20FD/OSHW4/test.bin","/");
 	fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir3("/Volumes/USB20FD/OSHW4/test.bin","/"), "folder");
-	fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir3("/Volumes/USB20FD/OSHW4/test.bin","/"), "new");
-	}
+	//fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir3("/Volumes/USB20FD/OSHW4/test.bin","/"), "new");
+	//fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir3("/Volumes/USB20FD/OSHW4/test.bin","/"), "stuff");
+	//}
 	//fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir("/Volumes/USB20FD/OSHW4/test.bin","/"), "new");
 	//fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir("/Volumes/USB20FD/OSHW4/test.bin","/"), "folder");
 	//fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir("/Volumes/USB20FD/OSHW4/test.bin","/"), "folder");
@@ -465,12 +489,15 @@ int main(int argc, char *argv[]) {
 		//fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir("/Volumes/USB20FD/OSHW4/test.bin","/"), "folder");
 		
 	int index = fs_opendir3("/Volumes/USB20FD/OSHW4/test.bin","/folder");
-	fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", index, "new");
+	fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", index, "new77");
 	
 	int index2 = fs_opendir3("/Volumes/USB20FD/OSHW4/test.bin","/folder/new");
 	fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", index2, "new2");
 	//fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", index, "new2");
 
 	int index3 = fs_opendir3("/Volumes/USB20FD/OSHW4/test.bin","/folder/new/new2");
-	fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", index3, "new3");	
+	fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", index3, "new3");
+	
+	
+		
 }
