@@ -374,11 +374,12 @@ void fs_mkdir(char *diskname, int dh, char *child_name) // FAT indicies start fr
 			
 			// step 5: write new directory to previously unallocated cluster
 			
-			fseek(fp, dh+i+newCluster, SEEK_SET);                 // return to dh + cluster offset
+			fseek(fp, startOfData+(i*globalClusterSize), SEEK_SET);                 // return to dh + cluster offset
+			printf("\nHere is the number: %d",i);
 			entry_t dataToWrite[1] = {directoryInfo};
 			fwrite(dataToWrite, sizeof(entry_t), 1, fp);       // write new directory to cluster
 
-			printf("\nNew directory created: %s    Starting at byte: %d",child_name, dh+i+newCluster);
+			printf("\nNew directory created: %s    Starting at byte: %d",child_name, startOfData+(i*globalClusterSize));
 			printf("\nNumber of children in subdirectory: %d\n",pointerCounter[0]+1);
 			break;
 		}
@@ -491,13 +492,13 @@ int main(int argc, char *argv[]) {
 	int index = fs_opendir3("/Volumes/USB20FD/OSHW4/test.bin","/folder");
 	fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", index, "new77");
 	
-	int index2 = fs_opendir3("/Volumes/USB20FD/OSHW4/test.bin","/folder/new");
+	int index2 = fs_opendir3("/Volumes/USB20FD/OSHW4/test.bin","/folder/new77");
 	fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", index2, "new2");
 	//fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", index, "new2");
 
-	int index3 = fs_opendir3("/Volumes/USB20FD/OSHW4/test.bin","/folder/new/new2");
+	int index3 = fs_opendir3("/Volumes/USB20FD/OSHW4/test.bin","/folder/new77/new2");
 	fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", index3, "new3");
 	
-	
+	fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir3("/Volumes/USB20FD/OSHW4/test.bin","/"), "folder2");
 		
 }
