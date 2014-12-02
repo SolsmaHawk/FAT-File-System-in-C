@@ -394,12 +394,30 @@ void readDisk(FILE *fileToRead, char *diskArea, char *diskName)
 }
 
 
-int fs_open(char *absolute_path, char *mode, char *diskname) // open a file saved to the FAT file system
+int fs_open(char *absolute_path, char *mode) // open a file saved to the FAT file system
 {
+	FILE *fp;
+	fp=fopen(globalFilename, "rb+");
+	__int8_t entryType[1]; 
 			// step 1 : search for file at absolute path
 			
-			int fileIndex = fs_opendir3(diskname, absolute_path,0);
-			
+	int fileIndex = fs_opendir3(globalFilename, absolute_path,0); // get beginning of file cluster
+	fseek(fp, fileIndex, SEEK_SET); // seek to index
+	fread(entryType, sizeof(__int8_t), 1, fp);
+	printf("\n\nEntry type: %d\n",*entryType);
+	if(*entryType == -128)
+	{
+		printf("\nfs_open: File doesn't exist. File created at %s\n",absolute_path);
+	}
+	else if (*entryType == 1) 
+	{
+		printf("\nfs_open: File %s openned\n",absolute_path);
+		return fileIndex;
+	}
+	else
+	{
+		printf("\nfs_open Error. Could be directory. Directories cannot be openned\n");
+	}
 	
 	// step 2 : if it doesn't exist, create the file
 	
@@ -465,8 +483,8 @@ struct stat st;
 stat("/Users/johnsolsma/Desktop/test.bin", &st);
 int size = st.st_size;
 
-printf("%d bytes stuff: %d",size,fs_open("/new77","r",globalFilename));
-
+printf("%d bytes stuff: %d",size,fs_open("/dog.png","r"));
+//fs_open("/dog.png","r");
 	//int index4 = fs_opendir3("/Volumes/USB20FD/OSHW4/test.bin","/folder/new77");
 	//fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", index4, "pictures");
 	
