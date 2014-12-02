@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #define START_OF_FAT 50
 #define FILE_INFO_SIZE_WITH_COUNTER 44 // 40 bytes + 4 bytes to hold pointer counter
@@ -66,6 +67,8 @@ static __int16_t clusters;
 //static __int16_t numberOfSectorsInCluster;
 static __int16_t globalClusterSize;
 static __int16_t startOfData;
+
+static char globalFilename[] = {"/Users/johnsolsma/Desktop/test.bin"};
 
 int formatDisk(FILE *fileToFormat, char *diskName, __int16_t sectorSize, __int16_t clusterSize, __int16_t diskSize, __int16_t fatStart, __int16_t fatLength, __int16_t dataStart, __int16_t dataLength)
 {
@@ -171,7 +174,7 @@ int formatDisk(FILE *fileToFormat, char *diskName, __int16_t sectorSize, __int16
 
 
 
-int fs_opendir3(char *diskname, char *absolute_path) // returns an integer that returns a handler to the directory pointed by absolute path ex: /root/new/
+int fs_opendir3(char *diskname, char *absolute_path, int verbose) // returns an integer that returns a handler to the directory pointed by absolute path ex: /root/new/
 {
 	FILE *fp;
 	int directoryIndex;
@@ -180,7 +183,10 @@ int fs_opendir3(char *diskname, char *absolute_path) // returns an integer that 
 	__int32_t pointerCounter[1];
 	if(strncmp("/",absolute_path, 1)==0 && strlen(absolute_path)==1) // root directory
 	{
-		printf("\nAdding to: root directory. Directory index: %d",startOfData); // start of root directory
+		if(verbose==1)
+		{
+			printf("\nAdding to: root directory. Directory index: %d",startOfData); // start of root directory
+		}
 		return(startOfData);
 	}
 	else
@@ -237,7 +243,10 @@ int fs_opendir3(char *diskname, char *absolute_path) // returns an integer that 
 	    tok = strtok(NULL, "/");
 	  }
 	fclose(fp);
-	printf("\nAdding to: %s directory. Directory index: %d",pointersFromRoot[0].childName,directoryIndex);
+	if(verbose==1)
+	{
+		printf("\nAdding to: %s directory. Directory index: %d",pointersFromRoot[0].childName,directoryIndex);
+	}
 	return directoryIndex;
 	}
 	fclose(fp);
@@ -385,14 +394,47 @@ void readDisk(FILE *fileToRead, char *diskArea, char *diskName)
 }
 
 
+int fs_open(char *absolute_path, char *mode, char *diskname) // open a file saved to the FAT file system
+{
+			// step 1 : search for file at absolute path
+			
+			int fileIndex = fs_opendir3(diskname, absolute_path,0);
+			
+	
+	// step 2 : if it doesn't exist, create the file
+	
+	
+	
+	return fileIndex;
+}
+
+
+int fs_close(int fh) // close the opened file
+{  
+	return 0;
+}
+
+int fs_write( const void *buffer, int count, int stream )
+{
+	// step 1 : determine file size
+	
+	// step 2 : mark the number of fat entries required to store the file
+	return 0;
+}
+int fs_read( const void *buffer, int count, int stream )
+{
+	return 0;
+}
+
+
 int main(int argc, char *argv[]) {
 	FILE *fileToInit;
-	initDisk(fileToInit,"/Volumes/USB20FD/OSHW4/test.bin");
+	initDisk(fileToInit,"/Users/johnsolsma/Desktop/test.bin");
 	time_t t = time(NULL);
 	  struct tm *tptr = localtime(&t);
 	//printf("%d",test<<5);
-	formatDisk(fileToInit,"/Volumes/USB20FD/OSHW4/test.bin",128,8,10000,START_OF_FAT,20000,20051,20);
-	readDisk(fileToInit,"MBR","/Volumes/USB20FD/OSHW4/test.bin");
+	formatDisk(fileToInit,"/Users/johnsolsma/Desktop/test.bin",128,8,10000,START_OF_FAT,20000,20051,20);
+	readDisk(fileToInit,"MBR","/Users/johnsolsma/Desktop/test.bin");
 
 
 	time_t rawtime;
@@ -407,27 +449,26 @@ int main(int argc, char *argv[]) {
 			printf("%s",ctime(&currentTime));
 			//char directory[12] = {"/"};
 			
-	//for(int i = 0; i<1; i++)
-		
-	//int test = fs_opendir3("/Volumes/USB20FD/OSHW4/test.bin","/");
-	fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir3("/Volumes/USB20FD/OSHW4/test.bin","/"), "folder");
-	//fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir3("/Volumes/USB20FD/OSHW4/test.bin","/"), "new");
-	//fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir3("/Volumes/USB20FD/OSHW4/test.bin","/"), "stuff");
-	//}
-	//fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir("/Volumes/USB20FD/OSHW4/test.bin","/"), "new");
-	//fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir("/Volumes/USB20FD/OSHW4/test.bin","/"), "folder");
-	//fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir("/Volumes/USB20FD/OSHW4/test.bin","/"), "folder");
-		//fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir("/Volumes/USB20FD/OSHW4/test.bin","/"), "new");
-		//fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", fs_opendir("/Volumes/USB20FD/OSHW4/test.bin","/"), "folder");
-		
-	int index = fs_opendir3("/Volumes/USB20FD/OSHW4/test.bin","/folder");
-	fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", index, "new77");
+
 	
-	int index2 = fs_opendir3("/Volumes/USB20FD/OSHW4/test.bin","/folder/new77");
-	fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", index2, "new2");
-	//fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", index, "new2");
+	//int index = fs_opendir3("/Users/johnsolsma/Desktop/test.bin","/");
+	fs_mkdir(globalFilename, fs_opendir3(globalFilename,"/",1), "new77");
+	
+	int index2 = fs_opendir3("/Users/johnsolsma/Desktop/test.bin","/new77",1);
+	fs_mkdir(globalFilename, index2, "new2");
+	
+
+fs_mkdir(globalFilename, fs_opendir3(globalFilename,"/",1), "new88z");
 
 
-	int index4 = fs_opendir3("/Volumes/USB20FD/OSHW4/test.bin","/folder/new77");
-	fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", index4, "pictures");
+struct stat st;
+stat("/Users/johnsolsma/Desktop/test.bin", &st);
+int size = st.st_size;
+
+printf("%d bytes stuff: %d",size,fs_open("/new77","r",globalFilename));
+
+	//int index4 = fs_opendir3("/Volumes/USB20FD/OSHW4/test.bin","/folder/new77");
+	//fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", index4, "pictures");
+	
+	
 }
