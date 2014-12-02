@@ -255,7 +255,7 @@ int fs_opendir3(char *diskname, char *absolute_path, int verbose) // returns an 
 
 
 
-void fs_mkdir(char *diskname, int dh, char *child_name) // FAT indicies start from 0 - relative from 50
+void fs_mkdir(char *diskname, int dh, char *child_name, int type) // FAT indicies start from 0 - relative from 50
 {
 	__int16_t unallocatedCluster[1] = {0xFFFF};
 	FILE *fp;
@@ -273,7 +273,14 @@ void fs_mkdir(char *diskname, int dh, char *child_name) // FAT indicies start fr
 			entry_t directoryInfo;
 			
 			// step 2: set directory Info
-			directoryInfo.entry_type= 1;                          // indicates this is a directory
+			if(type==1) // set this up as a file
+			{
+				directoryInfo.entry_type= 1;                          // indicates this is a file
+			}
+			else // set this up as a directory
+			{
+				directoryInfo.entry_type= 0;                          // indicates this is a directory
+			}
 			directoryInfo.name_len = strlen(child_name);
 			strcpy(directoryInfo.name, child_name);               // set directory name
 			directoryInfo.size = 0;
@@ -318,8 +325,14 @@ void fs_mkdir(char *diskname, int dh, char *child_name) // FAT indicies start fr
 			printf("\nHere is the number: %d",i);
 			entry_t dataToWrite[1] = {directoryInfo};
 			fwrite(dataToWrite, sizeof(entry_t), 1, fp);       // write new directory to cluster
-
-			printf("\nNew directory created: %s    Starting at byte: %d",child_name, startOfData+(i*globalClusterSize));
+			if(type==1)
+			{
+				printf("\nNew file created: %s    Starting at byte: %d",child_name, startOfData+(i*globalClusterSize));
+			}
+			else
+			{
+				printf("\nNew directory created: %s    Starting at byte: %d",child_name, startOfData+(i*globalClusterSize));
+			}
 			printf("\nNumber of children in subdirectory: %d\n",pointerCounter[0]+1);
 			break;
 		}
@@ -407,7 +420,24 @@ int fs_open(char *absolute_path, char *mode) // open a file saved to the FAT fil
 	printf("\n\nEntry type: %d\n",*entryType);
 	if(*entryType == -128)
 	{
-		printf("\nfs_open: File doesn't exist. File created at %s\n",absolute_path);
+		printf("\nfs_open: File doesn't exist. File will be created at %s\n",absolute_path);
+		char str[32];
+		char filename[32];
+		strcpy(str, absolute_path);
+		char *tok = strtok(str, "/");
+		while (tok != NULL)
+		{  
+			strcpy(filename, tok);
+			tok = strtok(NULL, "/");
+		}
+		int filenameLen = strlen(filename);
+		int absPathLen = strlen(absolute_path);
+		int pathLen = absPathLen-filenameLen;
+		//char path[pathLen+1];
+		//strncpy(path, absolute_path, sizeof path);
+		str[pathLen] = '\0';//Set next to last char to null
+		printf("\nHere is the filename: %s to be put at path: %s\n",filename,str);
+		fs_mkdir(globalFilename, fs_opendir3(globalFilename,str,1), filename,1);
 	}
 	else if (*entryType == 1) 
 	{
@@ -470,13 +500,13 @@ int main(int argc, char *argv[]) {
 
 	
 	//int index = fs_opendir3("/Users/johnsolsma/Desktop/test.bin","/");
-	fs_mkdir(globalFilename, fs_opendir3(globalFilename,"/",1), "new77");
+	fs_mkdir(globalFilename, fs_opendir3(globalFilename,"/",1), "new77",0);
 	
 	int index2 = fs_opendir3("/Users/johnsolsma/Desktop/test.bin","/new77",1);
-	fs_mkdir(globalFilename, index2, "new2");
+	fs_mkdir(globalFilename, index2, "new2",0);
 	
 
-fs_mkdir(globalFilename, fs_opendir3(globalFilename,"/",1), "new88z");
+fs_mkdir(globalFilename, fs_opendir3(globalFilename,"/",1), "new88z",0);
 
 
 struct stat st;
@@ -487,6 +517,6 @@ printf("%d bytes stuff: %d",size,fs_open("/dog.png","r"));
 //fs_open("/dog.png","r");
 	//int index4 = fs_opendir3("/Volumes/USB20FD/OSHW4/test.bin","/folder/new77");
 	//fs_mkdir("/Volumes/USB20FD/OSHW4/test.bin", index4, "pictures");
-	
+
 	
 }
