@@ -35,23 +35,43 @@ static int globalClusterSize;
 
 
 
-void load_disk(char disk_file[32])
+void load_disk(char *disk_file)
 {
-	if(file_exists(disk_file)==TRUE)
+	if(fileExists(disk_file)==TRUE)
 	{
 		strcpy(diskName, disk_file);
+		printf("Disk already created. Loading disk: %s\n",diskName);
 		readMBR();
 	}
 	else
 	{
 		strcpy(diskName, disk_file);
+		printf("No disk file named: %s\n",diskName);
 		format(128, 8, 1000);
 	}
 }
 
+
 void readMBR() // reads MBR and sets global variables
 {
-	printf("Disk already created. Loading disk: %s",diskName);
+	FILE *fp;
+		fp=fopen(diskName, "rb+");
+		if(fp != NULL)
+		{
+			printf("MBR loaded on disk: %s\n",diskName);
+			
+		}
+		else
+		{
+			printf("There was an error reading from disk.\n");
+			return;
+		}
+		mbr_t *mbr = (mbr_t *)malloc(sizeof(mbr_t));
+		//rewind(fp);
+		fseek(fp, 0, SEEK_SET);
+		fread(mbr, sizeof(mbr_t), 1, fp);
+		printf("%d",mbr->data_start);
+
 }
 
 int indexTranslation(int index)
@@ -61,16 +81,12 @@ int indexTranslation(int index)
 
 
 void format(uint16_t sector_size, uint16_t cluster_size, uint16_t disk_size)
-{ printf("We got this disk name: %s\n",diskName);
-	
-	uint16_t sector[1]    = {sector_size};       // size of a sector in bytes
-	uint16_t cluster[1]   = {cluster_size};      // size of a cluster in sectors
-		
+{ 
 	FILE *fp;
 	fp=fopen(diskName, "wb");
 	if(fp != NULL)
 	{
-		printf("Disk successfully initialized at: %s\n",diskName);
+		printf("New disk successfully initialized at: %s\n",diskName);
 		
 	}
 	else
@@ -91,7 +107,7 @@ void format(uint16_t sector_size, uint16_t cluster_size, uint16_t disk_size)
 	printf("Finished writing: %d clusters\n",disk_size);
 	
 	// 2: Write MBR
-	rewind(fp);                    // return to beginning cluster 0 - byte 1
+	rewind(fp);                    // return to beginning cluster 0 - byte 0
 	mbr_t *mbr = (mbr_t *)malloc(sizeof(mbr_t));
 	mbr->sector_size = sector_size;
 	mbr->cluster_size = cluster_size;
@@ -137,14 +153,6 @@ char     disk_name[16];
 
 
 
-uint32_t dateInt() {
-	time_t t = time(NULL);
-	struct tm *tptr = localtime(&t);
-	uint32_t time_stamp;
-	time_stamp = ((tptr->tm_year-80)<<25) + ((tptr->tm_mon+1)<<21) + ((tptr->tm_mday)<<16) + (tptr->tm_hour<<11) + (tptr->tm_min<<5) + ((tptr->tm_sec)%60)/2;
-	return time_stamp;
-}
-
 
 
 
@@ -164,21 +172,12 @@ int fileExists(char *filename){
     
 }
 
-int file_exists (char * fileName)
-{
-   struct stat buf;
-   int i = stat ( fileName, &buf );
-     /* File found */
-     if ( i == 0 )
-     {
-       return 1;
-     }
-	else
-	{
-	return 0;	
-	}
-     
-       
+uint32_t dateInt() {
+	time_t t = time(NULL);
+	struct tm *tptr = localtime(&t);
+	uint32_t time_stamp;
+	time_stamp = ((tptr->tm_year-80)<<25) + ((tptr->tm_mon+1)<<21) + ((tptr->tm_mday)<<16) + (tptr->tm_hour<<11) + (tptr->tm_min<<5) + ((tptr->tm_sec)%60)/2;
+	return time_stamp;
 }
 
 
@@ -189,12 +188,13 @@ int main(int argc, char *argv[]) {
 		//char * names = diskName;
 		//fp=fopen("test.bin", "wb+");
 	printf("MBR size: %lu\n",sizeof(mbr_t));
+	load_disk("test.bin");
 
-	strcpy(diskName, "test.bin");
+	//strcpy(diskName, "test.bin");
 	//diskName ="test.bin";
-	printf("%s\n",diskName);
+//	printf("%s\n",diskName);
 	//format(128, 8, 1000);
-	format(128, 8, 1000);
+	//format(128, 8, 1000);
 	//diskName="Hello";
 	
 
