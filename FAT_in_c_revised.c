@@ -3,7 +3,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <time.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -16,6 +15,7 @@
 void format(uint16_t sector_size, uint16_t cluster_size, uint16_t disk_size);
 int fileExists(char * filename);
 int file_exists (char * fileName);
+int indexTranslation(int index);
 void readMBR();
 
 typedef struct __attribute__ ((__packed__)) {
@@ -31,8 +31,10 @@ typedef struct __attribute__ ((__packed__)) {
 
 
 static char diskName[32];
-static int globalClusterSize;
 
+static int globalClusterSize;
+static int globalStartOfFat;
+static int globalStartOfData;
 
 
 void load_disk(char *disk_file)
@@ -40,7 +42,7 @@ void load_disk(char *disk_file)
 	if(fileExists(disk_file)==TRUE)
 	{
 		strcpy(diskName, disk_file);
-		printf("Disk already created. Loading disk: %s\n",diskName);
+		printf("Disk already created.  Loading disk: %s\n",diskName);
 		readMBR();
 	}
 	else
@@ -58,7 +60,7 @@ void readMBR() // reads MBR and sets global variables
 		fp=fopen(diskName, "rb+");
 		if(fp != NULL)
 		{
-			printf("MBR loaded on disk: %s\n",diskName);
+			printf("MBR loaded on disk:    %s\n",diskName);
 			
 		}
 		else
@@ -70,14 +72,32 @@ void readMBR() // reads MBR and sets global variables
 		//rewind(fp);
 		fseek(fp, 0, SEEK_SET);
 		fread(mbr, sizeof(mbr_t), 1, fp);
+		globalClusterSize = mbr->sector_size*mbr->cluster_size;
+		globalStartOfFat= indexTranslation(mbr->fat_start);
+		globalStartOfData= indexTranslation(mbr->data_start);
+		printf("Disk sector size:      %d  bytes\n",mbr->sector_size);
+		printf("Disk cluster size:     %d  sectors\n",mbr->cluster_size);
+		printf("Disk size:             %d  clusters\n",mbr->disk_size);
+		printf("Start of FAT:  cluster %d\n",mbr->fat_start);
+		printf("FAT length:            %d clusters, %d entries\n",mbr->fat_length,mbr->disk_size);
+		printf("Start of data: cluster %d, byte: %d\n",mbr->data_start,indexTranslation(mbr->data_start));
+		printf("Data length:           %d  clusters\n",mbr->data_length);
+		printf("Disk name:             %s\n",mbr->disk_name);
 		printf("%d",mbr->data_start);
 
 }
 
-int indexTranslation(int index)
-{
-	return index*globalClusterSize;
-}
+/*
+uint16_t sector_size; // bytes ( >= 64 bytes)
+uint16_t cluster_size; // number of sectors (at least 1 sector/cluster) 
+uint16_t disk_size; // size of disk in clusters
+uint16_t fat_start;
+uint16_t fat_length; // number of clusters
+uint16_t data_start; 
+uint16_t data_length; // clusters
+char     disk_name[16];
+*/
+
 
 
 void format(uint16_t sector_size, uint16_t cluster_size, uint16_t disk_size)
@@ -123,8 +143,8 @@ void format(uint16_t sector_size, uint16_t cluster_size, uint16_t disk_size)
 	
 	// 3: Write FAT entries
 	fseek(fp, indexTranslation(mbr->fat_start), SEEK_SET);
-	__uint16_t unallocatedCluster[1] = {0xFFFF};
-	__uint16_t allocatedCluster[1]   = {0xFFFE};
+	uint16_t unallocatedCluster[1] = {0xFFFF};
+	uint16_t allocatedCluster[1]   = {0xFFFE};
 	for(int i=0;i<disk_size;i++)
 	{
 		fwrite(unallocatedCluster, sizeof(__uint16_t), 1, fp);
@@ -158,6 +178,11 @@ char     disk_name[16];
 
 //// Helper Functions
 
+int indexTranslation(int index)
+{
+	return index*globalClusterSize;
+}
+
 int fileExists(char *filename){
     /* try to open file to read */
     FILE *file;
@@ -187,7 +212,7 @@ int main(int argc, char *argv[]) {
 	//printf("How is this possible?");
 		//char * names = diskName;
 		//fp=fopen("test.bin", "wb+");
-	printf("MBR size: %lu\n",sizeof(mbr_t));
+	//printf("MBR size: %lu\n",sizeof(mbr_t));
 	load_disk("test.bin");
 
 	//strcpy(diskName, "test.bin");
