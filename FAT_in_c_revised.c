@@ -57,47 +57,36 @@ void load_disk(char *disk_file)
 void readMBR() // reads MBR and sets global variables
 {
 	FILE *fp;
-		fp=fopen(diskName, "rb+");
-		if(fp != NULL)
-		{
-			printf("MBR loaded on disk:    %s\n",diskName);
-			
-		}
-		else
-		{
-			printf("There was an error reading from disk.\n");
-			return;
-		}
-		mbr_t *mbr = (mbr_t *)malloc(sizeof(mbr_t));
-		//rewind(fp);
-		fseek(fp, 0, SEEK_SET);
-		fread(mbr, sizeof(mbr_t), 1, fp);
-		globalClusterSize = mbr->sector_size*mbr->cluster_size;
-		globalStartOfFat= indexTranslation(mbr->fat_start);
-		globalStartOfData= indexTranslation(mbr->data_start);
-		printf("Disk sector size:      %d  bytes\n",mbr->sector_size);
-		printf("Disk cluster size:     %d  sectors\n",mbr->cluster_size);
-		printf("Disk size:             %d  clusters\n",mbr->disk_size);
-		printf("Start of FAT:  cluster %d\n",mbr->fat_start);
-		printf("FAT length:            %d clusters, %d entries\n",mbr->fat_length,mbr->disk_size);
-		printf("Start of data: cluster %d, byte: %d\n",mbr->data_start,indexTranslation(mbr->data_start));
-		printf("Data length:           %d  clusters\n",mbr->data_length);
-		printf("Disk name:             %s\n",mbr->disk_name);
-		printf("%d",mbr->data_start);
-
+	fp=fopen(diskName, "rb+");
+	if(fp != NULL)
+	{
+		printf("MBR loaded from file:  %s\n",diskName);
+		
+	}
+	else
+	{
+		printf("There was an error reading from disk.\n");
+		return;
+	}
+	mbr_t *mbr = (mbr_t *)malloc(sizeof(mbr_t));
+	//rewind(fp);
+	fseek(fp, 0, SEEK_SET);
+	fread(mbr, sizeof(mbr_t), 1, fp);
+	
+	globalClusterSize = mbr->sector_size*mbr->cluster_size;
+	globalStartOfFat= indexTranslation(mbr->fat_start);
+	globalStartOfData= indexTranslation(mbr->data_start);
+	
+	printf("Disk sector size:      %d  bytes\n",mbr->sector_size);
+	printf("Disk cluster size:     %d  sectors, %d bytes\n",mbr->cluster_size,globalClusterSize);
+	printf("Disk size:             %d  clusters\n",mbr->disk_size);
+	printf("Start of FAT:  cluster %d\n",mbr->fat_start);
+	printf("FAT length:            %d clusters, %d entries\n",mbr->fat_length,mbr->disk_size);
+	printf("Start of data: cluster %d, byte: %d\n",mbr->data_start,indexTranslation(mbr->data_start));
+	printf("Data length:           %d  clusters\n",mbr->data_length);
+	printf("Disk name:             %s\n",mbr->disk_name);
+	free(mbr);
 }
-
-/*
-uint16_t sector_size; // bytes ( >= 64 bytes)
-uint16_t cluster_size; // number of sectors (at least 1 sector/cluster) 
-uint16_t disk_size; // size of disk in clusters
-uint16_t fat_start;
-uint16_t fat_length; // number of clusters
-uint16_t data_start; 
-uint16_t data_length; // clusters
-char     disk_name[16];
-*/
-
 
 
 void format(uint16_t sector_size, uint16_t cluster_size, uint16_t disk_size)
@@ -127,14 +116,16 @@ void format(uint16_t sector_size, uint16_t cluster_size, uint16_t disk_size)
 	printf("Finished writing: %d clusters\n",disk_size);
 	
 	// 2: Write MBR
-	rewind(fp);                    // return to beginning cluster 0 - byte 0
+	rewind(fp);                     // return to beginning cluster 0 - byte 0
 	mbr_t *mbr = (mbr_t *)malloc(sizeof(mbr_t));
 	mbr->sector_size = sector_size;
 	mbr->cluster_size = cluster_size;
-	mbr->disk_size = disk_size;    // number of clusters
+	mbr->disk_size = disk_size;      // number of clusters
 	mbr->fat_start = 1;            // cluster 1
+	globalStartOfFat = indexTranslation(mbr->fat_start);
 	mbr->fat_length = (int)ceil((float)(disk_size*2)/(float)globalClusterSize); // number of clusters FAT occupies
 	mbr->data_start = mbr->fat_length+1;                                        // Cluster after fat_length
+	globalStartOfData = indexTranslation(mbr->data_start);
 	mbr->data_length = disk_size-mbr->data_start;
 	strcpy(mbr->disk_name,"C\0");
 	printf("Number of clusters required to store FAT: %d\n",mbr->fat_length);
@@ -156,27 +147,17 @@ void format(uint16_t sector_size, uint16_t cluster_size, uint16_t disk_size)
 		fwrite(allocatedCluster, sizeof(__uint16_t), 1, fp); // write in FAT entries for cluster occupied by MBR + FAT
 	}
 	printf("Disk %s formatting complete\n",mbr->disk_name);
-	
+	free(mbr);
 	fclose(fp);
 }
 
-/*
-uint16_t sector_size; // bytes ( >= 64 bytes)
-uint16_t cluster_size; // number of sectors (at least 1 sector/cluster) 
-uint16_t disk_size; // size of disk in clusters
-uint16_t fat_start;
-uint16_t fat_length; // number of clusters
-uint16_t data_start; 
-uint16_t data_length; // clusters
-char     disk_name[16];
-*/
-
-
-
-
+int fs_opendir(char *absolute_path);
+void fs_mkdir(int dh, char *child_name);
+//entry_t *fs_ls(int dh, int child_num);
 
 
 //// Helper Functions
+
 
 int indexTranslation(int index)
 {
@@ -208,21 +189,7 @@ uint32_t dateInt() {
 
 
 int main(int argc, char *argv[]) {
-	//FILE *fp;
-	//printf("How is this possible?");
-		//char * names = diskName;
-		//fp=fopen("test.bin", "wb+");
-	//printf("MBR size: %lu\n",sizeof(mbr_t));
+
 	load_disk("test.bin");
 
-	//strcpy(diskName, "test.bin");
-	//diskName ="test.bin";
-//	printf("%s\n",diskName);
-	//format(128, 8, 1000);
-	//format(128, 8, 1000);
-	//diskName="Hello";
-	
-
-	
-	
 }
