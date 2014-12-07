@@ -263,7 +263,7 @@ int fs_opendir(char *absolute_path)
 		
 		tok = strtok(NULL, "/");
 		}
-		printf("\nByte location of %s at: %d\n",absolute_path,currentByteIndex);
+		printf("Byte location of %s at: %d\n",absolute_path,currentByteIndex);
 		return currentByteIndex;
 	}
 	return 0;
@@ -279,7 +279,7 @@ void fs_mkdir(int dh, char *child_name)
 	fread(rootDir, sizeof(entry_t), 1, fp);
 	//printf("%s\n",rootDir->name);
 	rootDir->numChildren+=1; // increment entry children counter
-	printf("Number of children in this root directory: %d\n",rootDir->numChildren);
+	printf("\nNumber of children in <%s> subdirectory: %d\n",rootDir->name,rootDir->numChildren);
 	fseek(fp, dh, SEEK_SET); // return to beginning of directory
 	fwrite(rootDir, sizeof(entry_t), 1, fp); // write back edited entry
 	
@@ -304,6 +304,8 @@ void fs_mkdir(int dh, char *child_name)
 	childDir->entry_start = indexTranslation(dirStart);
 	fwrite(childDir, sizeof(entry_t), 1, fp);
 	printf("New directory <%s> successfully created at byte: %d\n",childDir->name,indexTranslation(dirStart));
+	free(childDir);
+	free(newDirPointer);
 	fclose(fp);
 	
 }
@@ -378,10 +380,27 @@ uint32_t date_format() {
 int main(int argc, char *argv[]) {
 
 	load_disk("test.bin");
+	fs_mkdir(fs_opendir("/"), "null");
+	
+	/*
 	fs_mkdir(fs_opendir("/null"), "new");
 	fs_mkdir(fs_opendir("/null/new"), "dog");
 	fs_mkdir(fs_opendir("/null/new/dog"), "cat");
-	fs_mkdir(fs_opendir("/null/new/dog/cat/mouse"), "mouse");
+	fs_mkdir(fs_opendir("/null/new/dog/cat"), "mouse");
+	fs_mkdir(fs_opendir("/null/new/dog/cat/mouse"), "rat");
+	
+	fs_mkdir(fs_opendir("/"), "null2");
+	fs_mkdir(fs_opendir("/"), "null3");
+	
+	for(int i = 0; i<100; i++)
+	{
+		int aInt = i;
+		char str[15];
+		sprintf(str, "dir%d", aInt);
+		fs_mkdir(fs_opendir("/"), str);
+	}
+	*/
+	
 	//fs_mkdir(3072, "new");
 	//fs_mkdir(3072, "dog");
 	//fs_mkdir(3072, "new3");
