@@ -210,6 +210,33 @@ int fs_opendir(char *absolute_path)
 	}
 	else
 	{  
+		FILE *fp;
+		fp=fopen(diskName, "rb+");
+		char dirPath[64];
+		strcpy(dirPath, absolute_path);
+		char *tok = strtok(dirPath, "/");
+		fseek(fp, globalStartOfData, SEEK_SET); // go to root directory
+		while (tok != NULL)
+		{
+		printf("%s\n",tok);
+		
+		//read entry
+		int numChildren;
+		entry_t *currentDir = (entry_t *)malloc(sizeof(entry_t));
+		fread(currentDir, sizeof(entry_t), 1, fp);
+		//check number of children
+		numChildren=currentDir->numChildren;
+		//search children for matching directory name
+		//fseek(fp, globalStartOfData, SEEK_SET); // seek to first child pointer
+		for(int i=0;i<numChildren;i++)
+		{
+			
+		}
+		//fseek to beginning of child entry
+		
+		
+		tok = strtok(NULL, "/");
+		}
 		return 0;
 	}
 	
@@ -234,7 +261,7 @@ void fs_mkdir(int dh, char *child_name)
 	int dirStart = allocateFAT();
 	newDirPointer->type=1;
 	newDirPointer->reserved=15;
-	newDirPointer->start = dirStart;
+	newDirPointer->start = indexTranslation(dirStart); // convert to byte location
 	fwrite(newDirPointer, sizeof(entry_ptr_t), 1, fp);
 	
 	fseek(fp, indexTranslation(dirStart), SEEK_SET);
@@ -262,7 +289,20 @@ typedef struct __attribute__ ((__packed__)) {
 } entry_ptr_t;
 
 */
-entry_t *fs_ls(int dh, int child_num);
+entry_t *fs_ls(int dh, int child_num)
+{
+	FILE *fp;
+	fp=fopen(diskName, "rb+");
+	fseek(fp, dh+sizeof(entry_t)+(sizeof(entry_ptr_t)*child_num-1)+1, SEEK_SET);
+	
+	entry_ptr_t *childDirPointer = (entry_ptr_t *)malloc(sizeof(entry_ptr_t));
+	fread(childDirPointer, sizeof(entry_ptr_t), 1, fp);
+	fseek(fp, childDirPointer->start, SEEK_SET);
+	
+	entry_t *childDirEntry = (entry_t *)malloc(sizeof(entry_t));
+	fread(childDirEntry, sizeof(entry_ptr_t), 1, fp);
+	printf("Location of child: %d\n",childDirPointer->start);
+}
 
 
 //// Helper Functions
@@ -324,7 +364,8 @@ int main(int argc, char *argv[]) {
 
 	load_disk("test.bin");
 	fs_mkdir(3072, "null");
-	
+	//fs_opendir("/null/new");
+	entry_t *new = fs_ls(3072, 4);
 	//printf("%d\n",fs_opendir("/"));
 	//printf("%d\n",indexTranslation(allocateFAT()));
 }
