@@ -34,6 +34,7 @@ typedef struct __attribute__ ((__packed__)) {
 	uint8_t	name_len;
 	char		name[16];
 	uint32_t	size;
+	uint16_t  numChildren;
 } entry_t;
 
 
@@ -188,6 +189,7 @@ void format(uint16_t sector_size, uint16_t cluster_size, uint16_t disk_size)
 	root->name_len = 4;
 	strcpy(root->name, "root");
 	root->size = 0;     //directories are size -
+	root->numChildren = 0;
 	printf("Disk %s formatting complete\n",mbr->disk_name);
 	fseek(fp, globalStartOfData, SEEK_SET);
 	fwrite(root, sizeof(entry_t), 1, fp);
@@ -207,7 +209,7 @@ int fs_opendir(char *absolute_path)
 		return globalStartOfData;
 	}
 	else
-	{
+	{  
 		return 0;
 	}
 	
@@ -215,8 +217,51 @@ int fs_opendir(char *absolute_path)
 
 void fs_mkdir(int dh, char *child_name)
 {
+	FILE *fp;
+	fp=fopen(diskName, "rb+");
+	fseek(fp, dh, SEEK_SET);
+	entry_t *rootDir = (entry_t *)malloc(sizeof(entry_t));
+	
+	fread(rootDir, sizeof(entry_t), 1, fp);
+	//printf("%s\n",rootDir->name);
+	rootDir->numChildren+=1; // increment entry children counter
+	printf("\nNumber of children in this directory: %d\n",rootDir->numChildren);
+	fseek(fp, dh, SEEK_SET); // return to beginning of directory
+	fwrite(rootDir, sizeof(entry_t), 1, fp); // write back edited entry
+	
+	fseek(fp, dh+sizeof(entry_t)+(sizeof(entry_ptr_t)*rootDir->numChildren-1)+1, SEEK_SET);  // seek to byte after last pointer (if 0 children, byte after entry type)
+	entry_ptr_t *newDirPointer = (entry_ptr_t *)malloc(sizeof(entry_ptr_t));
+	int dirStart = allocateFAT();
+	newDirPointer->type=1;
+	newDirPointer->reserved=15;
+	newDirPointer->start = dirStart;
+	fwrite(newDirPointer, sizeof(entry_ptr_t), 1, fp);
+	
+	fseek(fp, indexTranslation(dirStart), SEEK_SET);
+	entry_t *childDir = (entry_t *)malloc(sizeof(entry_t));
+	uint32_t time_stamp = date_format();
+	childDir->entry_type = 1;
+	childDir->creation_date = htons((time_stamp>>16) & 0xFFFF);
+	childDir->creation_time = htons(time_stamp & 0xFFFF);
+	childDir->name_len = strlen(child_name);
+	strcpy(childDir->name, child_name);
+	childDir->size = 0;     //directories are size -
+	childDir->numChildren = 0;
+	fwrite(childDir, sizeof(entry_t), 1, fp);
+	printf("New directory <%s> successfully created at byte: %d\n",childDir->name,indexTranslation(dirStart));
+	fclose(fp);
 	
 }
+
+
+/*
+typedef struct __attribute__ ((__packed__)) {
+	uint8_t	type;
+	uint8_t reserved;
+	uint16_t start;
+} entry_ptr_t;
+
+*/
 entry_t *fs_ls(int dh, int child_num);
 
 
@@ -278,6 +323,8 @@ uint32_t date_format() {
 int main(int argc, char *argv[]) {
 
 	load_disk("test.bin");
-	printf("%d\n",fs_opendir("/"));
+	fs_mkdir(3072, "null");
+	
+	//printf("%d\n",fs_opendir("/"));
 	//printf("%d\n",indexTranslation(allocateFAT()));
 }
