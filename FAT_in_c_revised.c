@@ -300,8 +300,10 @@ entry_t *fs_ls(int dh, int child_num)
 	fseek(fp, childDirPointer->start, SEEK_SET);
 	
 	entry_t *childDirEntry = (entry_t *)malloc(sizeof(entry_t));
-	fread(childDirEntry, sizeof(entry_ptr_t), 1, fp);
-	printf("Location of child: %d\n",childDirPointer->start);
+	fread(childDirEntry, sizeof(entry_t), 1, fp);
+	
+	printf("Location of child <%s> %d: byte %d\n",childDirEntry->name,child_num,childDirPointer->start);
+	return childDirEntry;
 }
 
 
@@ -366,6 +368,7 @@ int main(int argc, char *argv[]) {
 	fs_mkdir(3072, "null");
 	//fs_opendir("/null/new");
 	entry_t *new = fs_ls(3072, 4);
+	printf("%s\n",new->name);
 	//printf("%d\n",fs_opendir("/"));
 	//printf("%d\n",indexTranslation(allocateFAT()));
 }
