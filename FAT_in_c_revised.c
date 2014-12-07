@@ -20,6 +20,7 @@ int indexTranslation(int index);
 void readMBR();
 int allocateFAT();
 
+
 /**
 entry_type (1 byte) - indicates if this is a file/directory (0 - file, 1 - directory)
 creation_time (2 bytes) - format described below
@@ -35,6 +36,7 @@ typedef struct __attribute__ ((__packed__)) {
 	char		name[16];
 	uint32_t	size;
 	uint16_t  numChildren;
+	uint32_t	entry_start;
 } entry_t;
 
 
@@ -121,6 +123,24 @@ void readMBR() // reads MBR and sets global variables
 }
 
 
+entry_t *fs_ls(int dh, int child_num)
+{
+	FILE *fp;
+	fp=fopen(diskName, "rb+");
+	fseek(fp, dh+sizeof(entry_t)+(sizeof(entry_ptr_t)*child_num-1)+1, SEEK_SET);
+	
+	entry_ptr_t *childDirPointer = (entry_ptr_t *)malloc(sizeof(entry_ptr_t));
+	fread(childDirPointer, sizeof(entry_ptr_t), 1, fp);
+	fseek(fp, childDirPointer->start, SEEK_SET);
+	
+	entry_t *childDirEntry = (entry_t *)malloc(sizeof(entry_t));
+	fread(childDirEntry, sizeof(entry_t), 1, fp);
+	
+	//printf("Location of child <%s> %d: byte %d\n",childDirEntry->name,child_num,childDirPointer->start);
+	return childDirEntry;
+}
+
+
 void format(uint16_t sector_size, uint16_t cluster_size, uint16_t disk_size)
 { 
 	FILE *fp;
@@ -190,6 +210,7 @@ void format(uint16_t sector_size, uint16_t cluster_size, uint16_t disk_size)
 	strcpy(root->name, "root");
 	root->size = 0;     //directories are size -
 	root->numChildren = 0;
+	root->entry_start = globalStartOfData;
 	printf("Disk %s formatting complete\n",mbr->disk_name);
 	fseek(fp, globalStartOfData, SEEK_SET);
 	fwrite(root, sizeof(entry_t), 1, fp);
@@ -215,12 +236,12 @@ int fs_opendir(char *absolute_path)
 		char dirPath[64];
 		strcpy(dirPath, absolute_path);
 		char *tok = strtok(dirPath, "/");
-		fseek(fp, globalStartOfData, SEEK_SET); // go to root directory
+		int currentByteIndex=globalStartOfData;
 		while (tok != NULL)
 		{
-		printf("%s\n",tok);
-		
+		//printf("%s\n",tok);
 		//read entry
+		fseek(fp, currentByteIndex, SEEK_SET); // go to root directory
 		int numChildren;
 		entry_t *currentDir = (entry_t *)malloc(sizeof(entry_t));
 		fread(currentDir, sizeof(entry_t), 1, fp);
@@ -228,18 +249,24 @@ int fs_opendir(char *absolute_path)
 		numChildren=currentDir->numChildren;
 		//search children for matching directory name
 		//fseek(fp, globalStartOfData, SEEK_SET); // seek to first child pointer
-		for(int i=0;i<numChildren;i++)
+		for(int i=1;i<numChildren+1;i++)
 		{
-			
+			entry_t *new = fs_ls(currentByteIndex, i);
+			//printf("%s\n",new->name);
+			if(strcmp(new->name, tok)==0)
+			{
+				currentByteIndex=new->entry_start;
+			}
 		}
 		//fseek to beginning of child entry
 		
 		
 		tok = strtok(NULL, "/");
 		}
-		return 0;
+		printf("\nByte location of %s at: %d\n",absolute_path,currentByteIndex);
+		return currentByteIndex;
 	}
-	
+	return 0;
 }
 
 void fs_mkdir(int dh, char *child_name)
@@ -252,7 +279,7 @@ void fs_mkdir(int dh, char *child_name)
 	fread(rootDir, sizeof(entry_t), 1, fp);
 	//printf("%s\n",rootDir->name);
 	rootDir->numChildren+=1; // increment entry children counter
-	printf("\nNumber of children in this directory: %d\n",rootDir->numChildren);
+	printf("Number of children in this root directory: %d\n",rootDir->numChildren);
 	fseek(fp, dh, SEEK_SET); // return to beginning of directory
 	fwrite(rootDir, sizeof(entry_t), 1, fp); // write back edited entry
 	
@@ -274,6 +301,7 @@ void fs_mkdir(int dh, char *child_name)
 	strcpy(childDir->name, child_name);
 	childDir->size = 0;     //directories are size -
 	childDir->numChildren = 0;
+	childDir->entry_start = indexTranslation(dirStart);
 	fwrite(childDir, sizeof(entry_t), 1, fp);
 	printf("New directory <%s> successfully created at byte: %d\n",childDir->name,indexTranslation(dirStart));
 	fclose(fp);
@@ -289,22 +317,7 @@ typedef struct __attribute__ ((__packed__)) {
 } entry_ptr_t;
 
 */
-entry_t *fs_ls(int dh, int child_num)
-{
-	FILE *fp;
-	fp=fopen(diskName, "rb+");
-	fseek(fp, dh+sizeof(entry_t)+(sizeof(entry_ptr_t)*child_num-1)+1, SEEK_SET);
-	
-	entry_ptr_t *childDirPointer = (entry_ptr_t *)malloc(sizeof(entry_ptr_t));
-	fread(childDirPointer, sizeof(entry_ptr_t), 1, fp);
-	fseek(fp, childDirPointer->start, SEEK_SET);
-	
-	entry_t *childDirEntry = (entry_t *)malloc(sizeof(entry_t));
-	fread(childDirEntry, sizeof(entry_t), 1, fp);
-	
-	printf("Location of child <%s> %d: byte %d\n",childDirEntry->name,child_num,childDirPointer->start);
-	return childDirEntry;
-}
+
 
 
 //// Helper Functions
@@ -365,10 +378,19 @@ uint32_t date_format() {
 int main(int argc, char *argv[]) {
 
 	load_disk("test.bin");
-	fs_mkdir(3072, "null");
+	fs_mkdir(fs_opendir("/null"), "new");
+	fs_mkdir(fs_opendir("/null/new"), "dog");
+	fs_mkdir(fs_opendir("/null/new/dog"), "cat");
+	fs_mkdir(fs_opendir("/null/new/dog/cat/mouse"), "mouse");
+	//fs_mkdir(3072, "new");
+	//fs_mkdir(3072, "dog");
+	//fs_mkdir(3072, "new3");
 	//fs_opendir("/null/new");
-	entry_t *new = fs_ls(3072, 4);
-	printf("%s\n",new->name);
+	//entry_t *new = fs_ls(3072, 1);
+	//entry_t *new2 = fs_ls(3072, 2);
+	//entry_t *new3 = fs_ls(3072, 3);
+	//entry_t *new4 = fs_ls(3072, 4);
+	//printf("%s\n",new->name);
 	//printf("%d\n",fs_opendir("/"));
 	//printf("%d\n",indexTranslation(allocateFAT()));
 }
