@@ -1,22 +1,20 @@
-
-
 /*
-._____. ._____. ._____. ._____. ._____. ._____. ._____. ._____.
-| ._. | | ._. | | ._. | | ._. | | ._. | | ._. | | ._. | | ._. |
-| !_| |_|_|_! | | !_| |_|_|_! | | !_| |_|_|_! | | !_| |_|_|_! |
-!___| |_______! !___| |_______! !___| |_______! !___| |_______!
-.___|_|_| |_________| | | !_________! | | !_________|_|_| |___.
-| ._____| |___________! !_____________! !_______________| |_. |
-| !_! | | | John Solsma 2014                        | | ! !_! |
-!_____! | | University of Iowa                      | !_____!
-._____. | | Operating Systems Fall 2014             | | ._____.
-| ._. | | | FAT File system implemented in C        | | | ._. |
-| !_| |_|_|___________. ._____________. .___________| |_|_|_! |
-!___| |_____________. | | ._________. | | ._________| |_______!
-.___|_|_| |___. .___|_|_| |___. .___|_|_| |___. .___|_|_| |___.
-| ._____| |_. | | ._____| |_. | | ._____| |_. | | ._____| |_. |
-| !_! | | !_! | | !_! | | !_! | | !_! | | !_! | | !_! | | !_! |
-!_____! !_____! !_____! !_____! !_____! !_____! !_____! !_____!
+		._____. ._____. ._____. ._____. ._____. ._____. ._____. ._____.
+		| ._. | | ._. | | ._. | | ._. | | ._. | | ._. | | ._. | | ._. |
+		| !_| |_|_|_! | | !_| |_|_|_! | | !_| |_|_|_! | | !_| |_|_|_! |
+		!___| |_______! !___| |_______! !___| |_______! !___| |_______!
+		.___|_|_| |_________| | | !_________! | | !_________|_|_| |___.
+		| ._____| |___________! !_____________! !_______________| |_. |
+		| !_! | | | John Solsma 2014                        | | ! !_! |
+		!_____! | | University of Iowa                      | !_______!
+		._____. | | Operating Systems Fall 2014             | | ._____.
+		| ._. | | | FAT File system implemented in C        | | | ._. |
+		| !_| |_|_|___________. ._____________. .___________| |_|_|_! |
+		!___| |_____________. | | ._________. | | ._________| |_______!
+		.___|_|_| |___. .___|_|_| |___. .___|_|_| |___. .___|_|_| |___.
+		| ._____| |_. | | ._____| |_. | | ._____| |_. | | ._____| |_. |
+		| !_! | | !_! | | !_! | | !_! | | !_! | | !_! | | !_! | | !_! |
+		!_____! !_____! !_____! !_____! !_____! !_____! !_____! !_____!
 */
 
 #include <stdio.h>
@@ -30,7 +28,7 @@
 #define TRUE  1
 #define FALSE 0
 
-#define RUNTESTS
+#define RUNTESTS // Comment out to prevent running of tests
 
 
 
@@ -406,10 +404,6 @@ uint32_t date_format() {
 
 int main(int argc, char *argv[]) {
 
-	//load_disk("test.bin");
-	
-	//printf("\n");
-	
 	
 	#ifdef RUNTESTS
 	printf("=========== Test 1: Create and format file: test.bin ===========\n\n");
@@ -457,38 +451,16 @@ int main(int argc, char *argv[]) {
 		}
 		
 	printf("\n=========== Test 4 complete. ===========\n\n\n");
+	
+	printf("\n=========== Test 5: Reopen test.bin ===========\n\n");
+	
+	load_disk("test.bin");
+	
+	printf("\n=========== Test 5 complete. ===========\n\n\n");
+	
+	
 
 	#endif
 	
 	
-	/*
-	fs_mkdir(fs_opendir("/null"), "new");
-	fs_mkdir(fs_opendir("/null/new"), "dog");
-	fs_mkdir(fs_opendir("/null/new/dog"), "cat");
-	fs_mkdir(fs_opendir("/null/new/dog/cat"), "mouse");
-	fs_mkdir(fs_opendir("/null/new/dog/cat/mouse"), "rat");
-	
-	fs_mkdir(fs_opendir("/"), "null2");
-	fs_mkdir(fs_opendir("/"), "null3");
-	
-	for(int i = 0; i<100; i++)
-	{
-		int aInt = i;
-		char str[15];
-		sprintf(str, "dir%d", aInt);
-		fs_mkdir(fs_opendir("/"), str);
-	}
-	*/
-	
-	//fs_mkdir(3072, "new");
-	//fs_mkdir(3072, "dog");
-	//fs_mkdir(3072, "new3");
-	//fs_opendir("/null/new");
-	//entry_t *new = fs_ls(3072, 1);
-	//entry_t *new2 = fs_ls(3072, 2);
-	//entry_t *new3 = fs_ls(3072, 3);
-	//entry_t *new4 = fs_ls(3072, 4);
-	//printf("%s\n",new->name);
-	//printf("%d\n",fs_opendir("/"));
-	//printf("%d\n",indexTranslation(allocateFAT()));
 }
