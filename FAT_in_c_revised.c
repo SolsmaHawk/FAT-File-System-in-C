@@ -137,8 +137,6 @@ entry_t *fs_ls(int dh, int child_num)
 	fread(childDirEntry, sizeof(entry_t), 1, fp);
 	
 	//printf("Location of child <%s> %d: byte %d\n",childDirEntry->name,child_num,childDirPointer->start);
-	free(childDirEntry);
-	free(childDirPointer);
 	return childDirEntry;
 }
 
@@ -259,14 +257,6 @@ int fs_opendir(char *absolute_path)
 			{
 				currentByteIndex=new->entry_start;
 			}
-			else
-			{
-				if(i==numChildren)
-				{
-					printf("Directory %s does not exist\n",absolute_path);
-					return -1;
-				}
-			}
 		}
 		//fseek to beginning of child entry
 		
@@ -276,7 +266,7 @@ int fs_opendir(char *absolute_path)
 		printf("Byte location of %s at: %d\n",absolute_path,currentByteIndex);
 		return currentByteIndex;
 	}
-	return -2;
+	return 0;
 }
 
 void fs_mkdir(int dh, char *child_name)
@@ -314,27 +304,10 @@ void fs_mkdir(int dh, char *child_name)
 	childDir->entry_start = indexTranslation(dirStart);
 	fwrite(childDir, sizeof(entry_t), 1, fp);
 	printf("New directory <%s> successfully created at byte: %d\n",childDir->name,indexTranslation(dirStart));
-	free(rootDir);
 	free(childDir);
 	free(newDirPointer);
 	fclose(fp);
 	
-}
-
-// Extra Credit functions
-
-int fs_open(char *absolute_path, char *mode)
-{
-	if(strcmp(mode, "w")==0)
-	{
-	//fs_opendir(absolute_path)
-	}
-	
-	else if (strcmp(mode, "r")==0)
-	{
-		return fs_opendir(absolute_path);
-	}
-	return -1;
 }
 
 
@@ -408,7 +381,7 @@ int main(int argc, char *argv[]) {
 
 	load_disk("test.bin");
 	fs_mkdir(fs_opendir("/"), "null");
-	fs_opendir("/new");
+	
 	/*
 	fs_mkdir(fs_opendir("/null"), "new");
 	fs_mkdir(fs_opendir("/null/new"), "dog");
