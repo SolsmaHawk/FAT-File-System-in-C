@@ -12,6 +12,10 @@
 #define TRUE  1
 #define FALSE 0
 
+#define RUNTESTS
+
+
+
 void format(uint16_t sector_size, uint16_t cluster_size, uint16_t disk_size);
 uint32_t date_format();
 int fileExists(char * filename);
@@ -327,6 +331,8 @@ typedef struct __attribute__ ((__packed__)) {
 
 //// Helper Functions
 
+
+
 int allocateFAT()
 {
 	FILE *fp;
@@ -382,15 +388,60 @@ uint32_t date_format() {
 
 int main(int argc, char *argv[]) {
 
+	//load_disk("test.bin");
+	
+	//printf("\n");
+	
+	
+	#ifdef RUNTESTS
+	printf("=========== Test 1: Create and format file: test.bin ===========\n\n");
+	
 	load_disk("test.bin");
 	
-	printf("\n");
+	printf("\n=========== Test 1 complete. ===========\n\n\n");
 	
-	fs_mkdir(fs_opendir("/"), "null");
-	fs_mkdir(fs_opendir("/"), "null2");
-	fs_mkdir(fs_opendir("/null"), "cat");
-	fs_mkdir(fs_opendir("/null/cat"), "hat");
-	fs_mkdir(fs_opendir("/null/cat/hat"), "mat");
+	
+	printf("=========== Test 2: Create directory /folder/cat/hat/mat/ran/fan/pan ===========\n\n");
+	
+	fs_mkdir(fs_opendir("/"), "folder");
+	fs_mkdir(fs_opendir("/folder"), "cat");
+	fs_mkdir(fs_opendir("/folder/cat"), "hat");
+	fs_mkdir(fs_opendir("/folder/cat/hat"), "mat");
+	fs_mkdir(fs_opendir("/folder/cat/hat/mat"), "ran");
+	fs_mkdir(fs_opendir("/folder/cat/hat/mat/ran"), "fan");
+	fs_mkdir(fs_opendir("/folder/cat/hat/mat/ran/fan"), "pan");
+	
+	printf("\n=========== Test 2 complete. ===========\n\n\n");
+	
+	printf("=========== Test 3: Create 50 new directories in root ===========\n\n");
+	
+	for(int i = 0; i<50; i++)
+		{
+			int aInt = i;
+			char str[15];
+			sprintf(str, "dir%d", aInt);
+			fs_mkdir(fs_opendir("/"), str);
+		}
+	
+	printf("\n=========== Test 3 complete. ===========\n\n\n");
+	
+	
+	printf("\n=========== Test 4: add a subdirectory to each of the new 50 directores ===========\n\n");
+		
+		for(int i = 0; i<50; i++)
+		{
+		int aInt = i;
+		char str[15];
+		char str2[15];
+		sprintf(str, "subdir%d", aInt);
+		sprintf(str2, "/dir%d", aInt);
+		fs_mkdir(fs_opendir(str2), str);
+		}
+		
+	printf("\n=========== Test 4 complete. ===========\n\n\n");
+
+	#endif
+	
 	
 	/*
 	fs_mkdir(fs_opendir("/null"), "new");
