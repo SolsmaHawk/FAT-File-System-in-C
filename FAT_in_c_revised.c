@@ -1,20 +1,10 @@
 /*
-		._____. ._____. ._____. ._____. ._____. ._____. ._____. ._____.
-		| ._. | | ._. | | ._. | | ._. | | ._. | | ._. | | ._. | | ._. |
-		| !_| |_|_|_! | | !_| |_|_|_! | | !_| |_|_|_! | | !_| |_|_|_! |
-		!___| |_______! !___| |_______! !___| |_______! !___| |_______!
-		.___|_|_| |_________| | | !_________! | | !_________|_|_| |___.
-		| ._____| |___________! !_____________! !_______________| |_. |
-		| !_! | | | John Solsma 2014                        | | ! !_! |
-		!_____! | | University of Iowa                      | !_______!
-		._____. | | Operating Systems Fall 2014             | | ._____.
-		| ._. | | | FAT File system implemented in C        | | | ._. |
-		| !_| |_|_|___________. ._____________. .___________| |_|_|_! |
-		!___| |_____________. | | ._________. | | ._________| |_______!
-		.___|_|_| |___. .___|_|_| |___. .___|_|_| |___. .___|_|_| |___.
-		| ._____| |_. | | ._____| |_. | | ._____| |_. | | ._____| |_. |
-		| !_! | | !_! | | !_! | | !_! | | !_! | | !_! | | !_! | | !_! |
-		!_____! !_____! !_____! !_____! !_____! !_____! !_____! !_____!
+
+	John Solsma
+	University of Iowa
+	Operating Systems Fall 2014
+	FAT File system implemented in C
+
 */
 
 #include <stdio.h>
@@ -334,16 +324,6 @@ void fs_mkdir(int dh, char *child_name)
 }
 
 
-/*
-typedef struct __attribute__ ((__packed__)) {
-	uint8_t	type;
-	uint8_t reserved;
-	uint16_t start;
-} entry_ptr_t;
-
-*/
-
-
 
 //// Helper Functions
 
@@ -428,27 +408,27 @@ int main(int argc, char *argv[]) {
 	printf("=========== Test 3: Create 50 new directories in root ===========\n\n");
 	
 	for(int i = 0; i<50; i++)
-		{
-			int aInt = i;
-			char str[15];
-			sprintf(str, "dir%d", aInt);
-			fs_mkdir(fs_opendir("/"), str);
-		}
+	{
+	int aInt = i;
+	char str[15];
+	sprintf(str, "dir%d", aInt);
+	fs_mkdir(fs_opendir("/"), str);
+	}
 	
 	printf("\n=========== Test 3 complete. ===========\n\n\n");
 	
 	
 	printf("\n=========== Test 4: add a subdirectory to each of the new 50 directores ===========\n\n");
 		
-		for(int i = 0; i<50; i++)
-		{
-		int aInt = i;
-		char str[15];
-		char str2[15];
-		sprintf(str, "subdir%d", aInt);
-		sprintf(str2, "/dir%d", aInt);
-		fs_mkdir(fs_opendir(str2), str);
-		}
+	for(int i = 0; i<50; i++)
+	{
+	int aInt = i;
+	char str[15];
+	char str2[15];
+	sprintf(str, "subdir%d", aInt);
+	sprintf(str2, "/dir%d", aInt);
+	fs_mkdir(fs_opendir(str2), str);
+	}
 		
 	printf("\n=========== Test 4 complete. ===========\n\n\n");
 	
