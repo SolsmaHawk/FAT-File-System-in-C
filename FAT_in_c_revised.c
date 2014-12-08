@@ -123,6 +123,7 @@ void readMBR() // reads MBR and sets global variables
 }
 
 
+
 entry_t *fs_ls(int dh, int child_num)
 {
 	FILE *fp;
@@ -137,8 +138,10 @@ entry_t *fs_ls(int dh, int child_num)
 	fread(childDirEntry, sizeof(entry_t), 1, fp);
 	
 	//printf("Location of child <%s> %d: byte %d\n",childDirEntry->name,child_num,childDirPointer->start);
+	fclose(fp);
 	return childDirEntry;
 }
+
 
 
 void format(uint16_t sector_size, uint16_t cluster_size, uint16_t disk_size)
@@ -382,6 +385,7 @@ int main(int argc, char *argv[]) {
 	load_disk("test.bin");
 	
 	printf("\n");
+	
 	fs_mkdir(fs_opendir("/"), "null");
 	fs_mkdir(fs_opendir("/"), "null2");
 	fs_mkdir(fs_opendir("/null"), "cat");
