@@ -18,7 +18,8 @@
 #define TRUE  1
 #define FALSE 0
 
-#define RUNTESTS // Comment out to prevent running of tests
+
+#define RUNTESTS   // Comment out to prevent running of tests  
 
 
 
