@@ -30,6 +30,7 @@ int file_exists (char * fileName);
 int indexTranslation(int index);
 void readMBR();
 int allocateFAT();
+int num_children(int dh);
 
 
 /**
@@ -253,28 +254,16 @@ int fs_opendir(char *absolute_path)
 		int currentByteIndex=globalStartOfData;
 		while (tok != NULL)
 		{
-		//printf("%s\n",tok);
-		//read entry
-		fseek(fp, currentByteIndex, SEEK_SET); // go to root directory
-		int numChildren;
-		entry_t *currentDir = (entry_t *)malloc(sizeof(entry_t));
-		fread(currentDir, sizeof(entry_t), 1, fp);
-		//check number of children
-		numChildren=currentDir->numChildren;
-		//search children for matching directory name
-		//fseek(fp, globalStartOfData, SEEK_SET); // seek to first child pointer
-		for(int i=1;i<numChildren+1;i++)
-		{
-			entry_t *new = fs_ls(currentByteIndex, i);
-			//printf("%s\n",new->name);
-			if(strcmp(new->name, tok)==0)
+			int numChildren;
+			numChildren=num_children(currentByteIndex);
+			for(int i=1;i<numChildren+1;i++)
 			{
-				currentByteIndex=new->entry_start;
-			}
+				entry_t *new = fs_ls(currentByteIndex, i);
+				if(strcmp(new->name, tok)==0)
+				{
+					currentByteIndex=new->entry_start;
+				}
 		}
-		//fseek to beginning of child entry
-		
-		
 		tok = strtok(NULL, "/");
 		}
 		printf("\nByte location of %s at: %d\n",absolute_path,currentByteIndex);
@@ -283,8 +272,19 @@ int fs_opendir(char *absolute_path)
 	return 0;
 }
 
+
 void fs_mkdir(int dh, char *child_name)
 {
+	int numchildren = num_children(dh);
+	for(int i =1;i<numchildren+1;i++)
+	{
+		entry_t *child = fs_ls(dh, i);
+		if(strcmp(child->name, child_name)==0)
+		{
+			printf("Directory <%s> already exists at this path.\n",child_name);
+			return;
+		}
+	}
 	FILE *fp;
 	fp=fopen(diskName, "rb+");
 	fseek(fp, dh, SEEK_SET);
@@ -325,8 +325,47 @@ void fs_mkdir(int dh, char *child_name)
 }
 
 
+//// Extra Credit Functions
+
+int fs_open(char *absolute_path, char *mode)
+{
+	if(strcmp(mode, "w")==0)
+	{
+		printf("Write mode\n");
+	}
+	else if (strcmp(mode, "r")==0)
+	{
+		printf("Read mode\n");
+	}
+	return 0;
+}
+
+
 
 //// Helper Functions
+
+int num_children(int dh)
+{
+	FILE *fp;
+	fp=fopen(diskName, "rb+");
+	fseek(fp, dh, SEEK_SET);
+	entry_t *currentDir = (entry_t *)malloc(sizeof(entry_t));
+	fread(currentDir, sizeof(entry_t), 1, fp);
+	fclose(fp);
+	return currentDir->numChildren;
+}
+
+
+char* dir_name(int dh)
+{
+	FILE *fp;
+	fp=fopen(diskName, "rb+");
+	fseek(fp, dh, SEEK_SET);
+	entry_t *currentDir = (entry_t *)malloc(sizeof(entry_t));
+	fread(currentDir, sizeof(entry_t), 1, fp);
+	fclose(fp);
+	return currentDir->name;
+}
 
 
 
@@ -385,6 +424,11 @@ uint32_t date_format() {
 
 int main(int argc, char *argv[]) {
 
+	load_disk("test.bin");
+	//fs_mkdir(fs_opendir("/"), "folder");
+	//printf("%s",dir_name(4096));
+	//fs_open("/", "w");
+	
 	
 	#ifdef RUNTESTS
 	printf("=========== Test 1: Create and format file: test.bin ===========\n\n");
@@ -406,9 +450,9 @@ int main(int argc, char *argv[]) {
 	
 	printf("\n=========== Test 2 complete. ===========\n\n\n");
 	
-	printf("=========== Test 3: Create 50 new directories in root ===========\n\n");
+	printf("=========== Test 3: Create 25 new directories in root ===========\n\n");
 	
-	for(int i = 0; i<50; i++)
+	for(int i = 0; i<25; i++)
 	{
 	int aInt = i;
 	char str[15];
@@ -419,9 +463,9 @@ int main(int argc, char *argv[]) {
 	printf("\n=========== Test 3 complete. ===========\n\n\n");
 	
 	
-	printf("\n=========== Test 4: add a subdirectory to each of the new 50 directores ===========\n\n");
+	printf("\n=========== Test 4: add a subdirectory to each of the new 25 directories ===========\n\n");
 		
-	for(int i = 0; i<50; i++)
+	for(int i = 0; i<25; i++)
 	{
 	int aInt = i;
 	char str[15];
