@@ -31,7 +31,10 @@ int indexTranslation(int index);
 void readMBR();
 int allocateFAT();
 int num_children(int dh);
-
+char* dir_name(int dh);
+static uint16_t sector_size; // used to set values for format - IMPORTANT: declare sizes in main (format is called within load_disk)
+static uint16_t cluster_size; 
+static uint16_t disk_size;
 
 /**
 entry_type (1 byte) - indicates if this is a file/directory (0 - file, 1 - directory)
@@ -82,6 +85,7 @@ static int globalClusterSize;
 static int globalStartOfFat;
 static int globalStartOfData;
 static int globalNumberOfClusters;
+static int FILEMODE;
 
 void load_disk(char *disk_file)
 {
@@ -95,7 +99,7 @@ void load_disk(char *disk_file)
 	{
 		strcpy(diskName, disk_file);
 		printf("No disk file named: %s\n",diskName);
-		format(128, 8, 1000);
+		format(sector_size, cluster_size, disk_size);
 	}
 }
 
@@ -332,6 +336,9 @@ int fs_open(char *absolute_path, char *mode)
 	if(strcmp(mode, "w")==0)
 	{
 		printf("Write mode\n");
+		FILEMODE=TRUE;
+		int dh = fs_opendir(absolute_path);
+		printf("Here it is: %s\n",dir_name(dh));
 	}
 	else if (strcmp(mode, "r")==0)
 	{
@@ -424,11 +431,13 @@ uint32_t date_format() {
 
 int main(int argc, char *argv[]) {
 
-	load_disk("test.bin");
-	//fs_mkdir(fs_opendir("/"), "folder");
-	//printf("%s",dir_name(4096));
-	//fs_open("/", "w");
-	
+/////// FORMATING VALUES ///////
+
+sector_size  = 128; 
+cluster_size = 8; 
+disk_size    = 1000;
+
+////////////////////////////////
 	
 	#ifdef RUNTESTS
 	printf("=========== Test 1: Create and format file: test.bin ===========\n\n");
@@ -477,11 +486,26 @@ int main(int argc, char *argv[]) {
 		
 	printf("\n=========== Test 4 complete. ===========\n\n\n");
 	
-	printf("\n=========== Test 5: Reopen test.bin ===========\n\n");
+	
+	printf("\n=========== Test 5: test duplicate directory protection on previous 25 directories ===========\n\n");
+			
+	for(int i = 0; i<25; i++)
+	{
+	int aInt = i;
+	char str[15];
+	char str2[15];
+	sprintf(str, "subdir%d", aInt);
+	sprintf(str2, "/dir%d", aInt);
+	fs_mkdir(fs_opendir(str2), str);
+	}
+			
+	printf("\n=========== Test 5 complete. ===========\n\n\n");
+	
+	printf("\n=========== Test 6: Reopen test.bin ===========\n\n");
 	
 	load_disk("test.bin");
 	
-	printf("\n=========== Test 5 complete. ===========\n\n\n");
+	printf("\n=========== Test 6 complete. ===========\n\n\n");
 	
 	
 
