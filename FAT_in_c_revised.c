@@ -32,6 +32,7 @@ void readMBR();
 int allocateFAT();
 int num_children(int dh);
 char* dir_name(int dh);
+int dir_type(int dh);
 static uint16_t sector_size; // used to set values for format - IMPORTANT: declare sizes in main (format is called within load_disk)
 static uint16_t cluster_size; 
 static uint16_t disk_size;
@@ -81,11 +82,14 @@ typedef struct __attribute__ ((__packed__)) {
 
 static char diskName[32];
 
+static int openFile;
 static int globalClusterSize;
 static int globalStartOfFat;
 static int globalStartOfData;
 static int globalNumberOfClusters;
 static int FILEMODE;
+static int WRITEMODE;
+static int READMODE;
 
 void load_disk(char *disk_file)
 {
@@ -270,7 +274,14 @@ int fs_opendir(char *absolute_path)
 		}
 		tok = strtok(NULL, "/");
 		}
+		if(FILEMODE==TRUE)
+		{
+			
+		}
+		else
+		{
 		printf("\nByte location of %s at: %d\n",absolute_path,currentByteIndex);
+		}
 		return currentByteIndex;
 	}
 	return 0;
@@ -289,6 +300,11 @@ void fs_mkdir(int dh, char *child_name)
 			return;
 		}
 	}
+	if(dir_type(dh)==0)
+	{
+		printf("Cannot create directory on file %s\n",dir_name(dh));
+		return;
+	}
 	FILE *fp;
 	fp=fopen(diskName, "rb+");
 	fseek(fp, dh, SEEK_SET);
@@ -304,7 +320,14 @@ void fs_mkdir(int dh, char *child_name)
 	fseek(fp, dh+sizeof(entry_t)+(sizeof(entry_ptr_t)*rootDir->numChildren-1)+1, SEEK_SET);  // seek to byte after last pointer (if 0 children, byte after entry type)
 	entry_ptr_t *newDirPointer = (entry_ptr_t *)malloc(sizeof(entry_ptr_t));
 	int dirStart = allocateFAT();
-	newDirPointer->type=1;
+	if(FILEMODE==TRUE)
+	{
+		newDirPointer->type=0;
+	}
+	else
+	{
+		newDirPointer->type=1;
+	}
 	newDirPointer->reserved=15;
 	newDirPointer->start = indexTranslation(dirStart); // convert to byte location
 	fwrite(newDirPointer, sizeof(entry_ptr_t), 1, fp);
@@ -312,7 +335,14 @@ void fs_mkdir(int dh, char *child_name)
 	fseek(fp, indexTranslation(dirStart), SEEK_SET);
 	entry_t *childDir = (entry_t *)malloc(sizeof(entry_t));
 	uint32_t time_stamp = date_format();
-	childDir->entry_type = 1;
+	if(FILEMODE==TRUE)
+	{
+		childDir->entry_type = 0;
+	}
+	else
+	{
+	childDir->entry_type = 1;	
+	}
 	childDir->creation_date = htons((time_stamp>>16) & 0xFFFF);
 	childDir->creation_time = htons(time_stamp & 0xFFFF);
 	childDir->name_len = strlen(child_name);
@@ -321,9 +351,17 @@ void fs_mkdir(int dh, char *child_name)
 	childDir->numChildren = 0;
 	childDir->entry_start = indexTranslation(dirStart);
 	fwrite(childDir, sizeof(entry_t), 1, fp);
-	printf("New directory <%s> successfully created at byte: %d\n\n",childDir->name,indexTranslation(dirStart));
+	if(FILEMODE==TRUE)
+	{
+		printf("New file <%s> successfully created at byte: %d\n\n",childDir->name,indexTranslation(dirStart));
+	}
+	else
+	{
+		printf("New directory <%s> successfully created at byte: %d\n\n",childDir->name,indexTranslation(dirStart));
+	}
 	free(childDir);
 	free(newDirPointer);
+	FILEMODE=FALSE;
 	fclose(fp);
 	
 }
@@ -333,17 +371,78 @@ void fs_mkdir(int dh, char *child_name)
 
 int fs_open(char *absolute_path, char *mode)
 {
+	char dirPath[64];
+	strcpy(dirPath, absolute_path);
+	char *last = (char *)malloc(sizeof(char));
+   char *tok = strtok(dirPath, "/");
+	while (tok != NULL)
+	{
+	         last=tok;
+	         tok = strtok(NULL, "/");
+	}
+	int dh = fs_opendir(absolute_path);
 	if(strcmp(mode, "w")==0)
 	{
-		printf("Write mode\n");
+		printf("Write mode on\n");
 		FILEMODE=TRUE;
-		int dh = fs_opendir(absolute_path);
-		printf("Here it is: %s\n",dir_name(dh));
+		
+		FILEMODE=FALSE;
+		if(strcmp(dir_name(dh),last)==0)
+		{
+			printf("The file <%s> already exists. <%s> openned for writing\n",last,last);
+			WRITEMODE=TRUE;
+			READMODE=FALSE;
+			openFile=dh;
+		}
+		else
+		{
+			printf("The file <%s> doesn't exist. <%s> created and openned for writing\n",last,last);
+			char * pch;
+			    pch=strrchr(dirPath,'/');
+				dirPath[pch-dirPath] = '\0';
+				FILEMODE=TRUE;
+				int dh2 = fs_opendir(dirPath);
+				WRITEMODE=TRUE;
+				READMODE=FALSE;
+				openFile=dh2;
+				fs_mkdir(dh2, last);
+
+		}
 	}
 	else if (strcmp(mode, "r")==0)
 	{
-		printf("Read mode\n");
+		printf("Read mode on\n");
+		if(strcmp(dir_name(dh),last)==0)
+		{
+			printf("The file <%s> already exists. <%s> openned for reading\n",last,last);
+			WRITEMODE=FALSE;
+			READMODE=TRUE;
+			openFile=dh;
+		}
+		else
+		{
+					printf("The file <%s> doesn't exist. <%s> cannot create files in read mode\n",last,last);
+		}
+	
+}
+return 0;
+}
+
+
+int fs_close(int fh)
+{
+	if(dir_type(fh)==1)
+	{
+	printf("Cannot close directory\n");
 	}
+	else
+	{
+		WRITEMODE=FALSE;
+		READMODE=FALSE;
+		openFile=0;
+		printf("File <%s> closed \n",dir_name(fh));
+	}
+
 	return 0;
 }
 
@@ -361,6 +460,18 @@ int num_children(int dh)
 	fclose(fp);
 	return currentDir->numChildren;
 }
+
+int dir_type(int dh)
+{
+	FILE *fp;
+	fp=fopen(diskName, "rb+");
+	fseek(fp, dh, SEEK_SET);
+	entry_t *currentDir = (entry_t *)malloc(sizeof(entry_t));
+	fread(currentDir, sizeof(entry_t), 1, fp);
+	fclose(fp);
+	return currentDir->entry_type;
+}
+
 
 
 char* dir_name(int dh)
@@ -501,14 +612,22 @@ disk_size    = 1000;
 			
 	printf("\n=========== Test 5 complete. ===========\n\n\n");
 	
-	printf("\n=========== Test 6: Reopen test.bin ===========\n\n");
+	printf("\n=========== Test 6: File Create in write-mode / open in read-mode / attempt to make a new directory over a file / File Close ===========\n\n");
+	
+	fs_open("/new.png", "w");
+	fs_open("/new.png", "r");
+	fs_mkdir(fs_opendir("/new.png"), "folder");
+	fs_close(fs_opendir("/new.png"));
+	printf("\n=========== Test 6 complete. ===========\n\n\n");
+	
+	printf("\n=========== Test 7: Reopen test.bin ===========\n\n");
 	
 	load_disk("test.bin");
 	
-	printf("\n=========== Test 6 complete. ===========\n\n\n");
+	printf("\n=========== Test 7 complete. ===========\n\n\n");
 	
 	
-
+	
 	#endif
 	
 	
